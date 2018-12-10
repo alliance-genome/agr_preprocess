@@ -1,0 +1,10 @@
+version: "2"
+
+services:
+  agr_preprocess:
+    image: agrdocker/agr_preprocess_run:latest
+    networks:
+      - esnet
+
+networks:
+  esnet:
