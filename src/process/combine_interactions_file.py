@@ -10,7 +10,6 @@ import json
 import glob
 import strict_rfc3339
 import requests
-import time
 from retry import retry
 from tqdm import tqdm
 
@@ -228,6 +227,9 @@ class ProcessInteractions(object):
                 except IndexError:
                     return False, None
 
+                if individual_entry.startswith('uniprotkb:'):
+                    individual_entry = individual_entry.split('-')[0]
+
                 prefixed_identifier = None
 
                 if entry_stripped.startswith('WB'): # TODO implement regex for WB / FB gene identifiers.
@@ -264,7 +266,7 @@ class ProcessInteractions(object):
         biogrid_filename = '/usr/src/app/download/BIOGRID.txt'
 
         # The order of this list is important.
-        parsing_list = [wormbase_filename, flybase_filename, imex_filename, biogrid_filename]
+        parsing_list = [wormbase_filename, flybase_filename, biogrid_filename, imex_filename]
 
         # TODO Taxon species needs to be pulled out into a standalone module to be used by other scripts.
         # TODO External configuration script for these types of filters? Not a fan of hard-coding.
@@ -610,22 +612,22 @@ class ProcessInteractions(object):
 
         for filename in upload_location_dict.keys():
 
-            logger.info('Compressing file: {}'.format(filename))
-            compressed_filename = "{}.tar.gz".format(upload_location_dict[filename])
-
-            os.system("tar -czvf /usr/src/app/output/{} {}".format(compressed_filename, filename))
-            # logger.info(os.system('ls -alh /usr/src/app/output/*'))
+            # logger.info('Compressing file: {}'.format(filename))
+            # compressed_filename = "{}.tar.gz".format(upload_location_dict[filename])
+            #
+            # os.system("tar -czvf /usr/src/app/output/{} {}".format(compressed_filename, filename))
+            # # logger.info(os.system('ls -alh /usr/src/app/output/*'))
 
             upload_file_prefix = '{}_{}_{}'.\
-                format(self.config['RELEASE_VERSION'], 'INTERACTION', upload_location_dict[filename])
+                format(self.config['RELEASE_VERSION'], 'INTERACTION-MOL', upload_location_dict[filename])
 
-            file_to_upload = {upload_file_prefix: open('/usr/src/app/output/' + compressed_filename, 'rb')}
+            file_to_upload = {upload_file_prefix: open('/usr/src/app/' + filename, 'rb')}
 
             headers = {
                 'Authorization': 'Bearer {}'.format(self.config['API_KEY'])
             }
 
-            logger.info('Attempting upload of data file: {}'.format(compressed_filename))
+            logger.info('Attempting upload of data file: {}'.format(filename))
             logger.debug('Attempting upload with header: {}'.format(headers))
             logger.info("Uploading data to {}) ...".format(self.config['FMS_API_URL'] + '/api/data/submit/'))
 

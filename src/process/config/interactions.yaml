@@ -12,7 +12,7 @@ BIOGRID_FILTER:
   - Saccharomyces_cerevisiae
 
 # Default variables, used if environmental variables are not set.
-RELEASE_VERSION: 0.0.0
-FMS_API_URL: https://fmsdev.alliancegenome.org
-API_KEY: # Defaults to "None" if it cannot be found in the environment.
+RELEASE_VERSION: 3.0.0
+FMS_API_URL: https://fms.alliancegenome.org
+API_KEY: # Defaults to None when blank.
 
