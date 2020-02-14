@@ -4,6 +4,7 @@ import logging
 import argparse
 import yaml
 import os
+import time
 import coloredlogs
 import urllib.request
 import json
@@ -340,15 +341,15 @@ class ProcessInteractions(object):
         publication_tracking_dict = {}
 
         # Open all of the output files.
-        with open('output/alliance_molecular_interactions.txt', 'w', encoding='utf-8') as tsvout, \
+        with open('output/alliance_molecular_interactions.tsv', 'w', encoding='utf-8') as tsvout, \
              open('output/skipped_entries.txt', 'w', encoding='utf-8') as skipped_out, \
-             open('output/alliance_molecular_interactions_fb.txt', 'w', encoding='utf-8') as fb_out, \
-             open('output/alliance_molecular_interactions_wb.txt', 'w', encoding='utf-8') as wb_out, \
-             open('output/alliance_molecular_interactions_zfin.txt', 'w', encoding='utf-8') as zfin_out, \
-             open('output/alliance_molecular_interactions_sgd.txt', 'w', encoding='utf-8') as sgd_out, \
-             open('output/alliance_molecular_interactions_rgd.txt', 'w', encoding='utf-8') as rgd_out, \
-             open('output/alliance_molecular_interactions_mgi.txt', 'w', encoding='utf-8') as mgi_out, \
-             open('output/alliance_molecular_interactions_human.txt', 'w', encoding='utf-8') as human_out, \
+             open('output/alliance_molecular_interactions_fly.tsv', 'w', encoding='utf-8') as fb_out, \
+             open('output/alliance_molecular_interactions_worm.tsv', 'w', encoding='utf-8') as wb_out, \
+             open('output/alliance_molecular_interactions_zebrafish.tsv', 'w', encoding='utf-8') as zfin_out, \
+             open('output/alliance_molecular_interactions_yeast.tsv', 'w', encoding='utf-8') as sgd_out, \
+             open('output/alliance_molecular_interactions_rat.tsv', 'w', encoding='utf-8') as rgd_out, \
+             open('output/alliance_molecular_interactions_mouse.tsv', 'w', encoding='utf-8') as mgi_out, \
+             open('output/alliance_molecular_interactions_human.tsv', 'w', encoding='utf-8') as human_out, \
              open('output/mapped_entries.txt', 'a+', encoding='utf-8') as mapped_out:
 
             mapped_out = csv.writer(mapped_out, quotechar = '', quoting=csv.QUOTE_NONE, delimiter='\t')
@@ -598,36 +599,37 @@ class ProcessInteractions(object):
         logger.info(os.system('ls -alh /usr/src/app/output/*'))
 
         upload_location_dict = {
-            'output/alliance_molecular_interactions.txt': 'COMBINED',
-            'output/alliance_molecular_interactions_fb.txt': 'FB',
-            'output/alliance_molecular_interactions_wb.txt': 'WB',
-            'output/alliance_molecular_interactions_zfin.txt': 'ZFIN',
-            'output/alliance_molecular_interactions_sgd.txt': 'SGD',
-            'output/alliance_molecular_interactions_rgd.txt': 'RGD',
-            'output/alliance_molecular_interactions_mgi.txt': 'MGI',
-            'output/alliance_molecular_interactions_human.txt': 'HUMAN'
+            'alliance_molecular_interactions.tsv': 'COMBINED',
+            'alliance_molecular_interactions_fly.tsv': 'FB',
+            'alliance_molecular_interactions_worm.tsv': 'WB',
+            'alliance_molecular_interactions_zebrafish.tsv': 'ZFIN',
+            'alliance_molecular_interactions_yeast.tsv': 'SGD',
+            'alliance_molecular_interactions_rat.tsv': 'RGD',
+            'alliance_molecular_interactions_mouse.tsv': 'MGI',
+            'alliance_molecular_interactions_human.tsv': 'HUMAN'
         }
 
         # time.sleep(100000)  # Stop the container from exiting so we can check the files.
 
         for filename in upload_location_dict.keys():
 
-            # logger.info('Compressing file: {}'.format(filename))
-            # compressed_filename = "{}.tar.gz".format(upload_location_dict[filename])
-            #
-            # os.system("tar -czvf /usr/src/app/output/{} {}".format(compressed_filename, filename))
-            # # logger.info(os.system('ls -alh /usr/src/app/output/*'))
+            logger.info('Compressing file: {}'.format(filename))
+            compressed_filename = "{}.tar.gz".format(upload_location_dict[filename])
+
+            os.chdir('/usr/src/app/output/')
+            os.system("tar -czvf {} {}".format(compressed_filename, filename))
+            logger.info(os.system('ls -alh /usr/src/app/output/*'))
 
             upload_file_prefix = '{}_{}_{}'.\
                 format(self.config['RELEASE_VERSION'], 'INTERACTION-MOL', upload_location_dict[filename])
 
-            file_to_upload = {upload_file_prefix: open('/usr/src/app/' + filename, 'rb')}
+            file_to_upload = {upload_file_prefix: open('/usr/src/app/output/' + compressed_filename, 'rb')}
 
             headers = {
                 'Authorization': 'Bearer {}'.format(self.config['API_KEY'])
             }
 
-            logger.info('Attempting upload of data file: {}'.format(filename))
+            logger.info('Attempting upload of data file: {}'.format(compressed_filename))
             logger.debug('Attempting upload with header: {}'.format(headers))
             logger.info("Uploading data to {}) ...".format(self.config['FMS_API_URL'] + '/api/data/submit/'))
 
