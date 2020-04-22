@@ -86,26 +86,34 @@ class ProcessInteractions(object):
                 self.download_file('https://download.alliancegenome.org/' + s3_filepath, config_entry + '.json')
 
         # Download interaction files from the Alliance, including IMEx and BioGRID.
-        list_of_source_files = ['FB', 'WB', 'IMEX', 'BIOGRID', 'BIOGRID-ORGANISM']
+        list_of_source_files = ['FB', 'WB', 'IMEX', 'BIOGRID-PSI', 'BIOGRID-ORGANISM']
 
         for entry in list_of_source_files:
             logger.info('Obtaining interaction source files from the file management system.')
+            logger.info('Querying for {}'.format(entry))
             query_url = api_url + '/api/datafile/by/{}/{}/{}?latest=true'\
-                                  .format(release_version, 'INTERACTION-SOURCE', entry)
+                                  .format(release_version, 'INTERACTION-MOL-SOURCE', entry)
             with urllib.request.urlopen(query_url) as url:
                 data = json.loads(url.read().decode())
                 s3_filepath = data[0]['s3Path']
                 logger.info('S3 filepath: {}'.format(s3_filepath))
-                self.download_file('https://download.alliancegenome.org/' + s3_filepath, entry + '.zip')
-                if entry != 'BIOGRID-ORGANISM':  # This file is unzipped later.
+
+                if entry == 'IMEX' or entry == 'BIOGRID-PSI' or entry == 'BIOGRID-ORGANISM':
+                    self.download_file('https://download.alliancegenome.org/' + s3_filepath, entry + '.zip')
+                else:
+                    self.download_file('https://download.alliancegenome.org/' + s3_filepath, entry)
+
+                if entry == 'IMEX' or entry == 'BIOGRID-PSI': # These need to be unzipped here. BIOGRID-ORGANISM is handled separately.
                     logger.info('Extracting file {}.zip with unzip.'.format(entry))
                     os.system('unzip /usr/src/app/download/{}.zip -d /usr/src/app/download/tmp'.format(entry))
                     logger.info('Renaming extracted file.')
                     if entry == 'IMEX':  # Special exception for IMEX because it's 2 files.
                         os.system('mv /usr/src/app/download/tmp/intact.txt /usr/src/app/download/{}.txt'.format(entry))
                         os.system('rm /usr/src/app/download/tmp/*')
-                    else:
+                    elif entry == 'BIOGRID-PSI':
                         os.system('mv /usr/src/app/download/tmp/* /usr/src/app/download/{}.txt'.format(entry))
+                elif entry == 'FB' or entry == 'WB':
+                    os.system('mv /usr/src/app/download/{} /usr/src/app/download/{}.txt'.format(entry, entry))
 
     @retry(tries=5, delay=5, logger=logger)
     def download_file(self, query_url, filename):
