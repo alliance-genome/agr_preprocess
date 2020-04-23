@@ -106,7 +106,7 @@ class ProcessInteractions(object):
                 if entry == 'IMEX' or entry == 'BIOGRID-PSI': # These need to be unzipped here. BIOGRID-ORGANISM is handled separately.
                     logger.info('Extracting file {}.zip with unzip.'.format(entry))
                     os.system('unzip /usr/src/app/download/{}.zip -d /usr/src/app/download/tmp'.format(entry))
-                    logger.info('Renaming extracted file.')
+                    logger.info('Renaming extracted file to {}.txt'.format(entry))
                     if entry == 'IMEX':  # Special exception for IMEX because it's 2 files.
                         os.system('mv /usr/src/app/download/tmp/intact.txt /usr/src/app/download/{}.txt'.format(entry))
                         os.system('rm /usr/src/app/download/tmp/*')
@@ -272,7 +272,7 @@ class ProcessInteractions(object):
         imex_filename = '/usr/src/app/download/IMEX.txt'
         wormbase_filename = '/usr/src/app/download/WB.txt'
         flybase_filename = '/usr/src/app/download/FB.txt'
-        biogrid_filename = '/usr/src/app/download/BIOGRID.txt'
+        biogrid_filename = '/usr/src/app/download/BIOGRID-PSI.txt'
 
         # The order of this list is important.
         parsing_list = [wormbase_filename, flybase_filename, biogrid_filename, imex_filename]
@@ -626,7 +626,7 @@ class ProcessInteractions(object):
 
             os.chdir('/usr/src/app/output/')
             os.system("tar -czvf {} {}".format(compressed_filename, filename))
-            logger.info(os.system('ls -alh /usr/src/app/output/*'))
+            # logger.info(os.system('ls -alh /usr/src/app/output/*'))
 
             upload_file_prefix = '{}_{}_{}'.\
                 format(self.config['RELEASE_VERSION'], 'INTERACTION-MOL', upload_location_dict[filename])
