@@ -2,6 +2,6 @@
 BGI: [FB, SGD, WB, ZFIN, RGD, MGI, HUMAN]
 
 # Default variables, used if environmental variables are not set.
--RELEASE_VERSION: 3.0.0
--FMS_API_URL: https://fms.alliancegenome.org
--API_KEY: # Defaults to None when blank.
+RELEASE_VERSION: 3.0.0
+FMS_API_URL: https://fms.alliancegenome.org
+API_KEY: # Defaults to None when blank.
