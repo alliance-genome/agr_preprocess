@@ -1,18 +1,7 @@
 # List of MODs from which to obtain BGI data:
 BGI: [FB, SGD, WB, ZFIN, RGD, MGI, HUMAN]
 
-# List of organisms in which to filter out BioGRID RNA-Protein interactions.
-BIOGRID_FILTER:
-  - Caenorhabditis_elegans
-  - Danio_rerio
-  - Drosophila_melanogaster
-  - Homo_sapiens
-  - Mus_musculus
-  - Rattus_norvegicus
-  - Saccharomyces_cerevisiae
-
 # Default variables, used if environmental variables are not set.
-RELEASE_VERSION: 3.0.0
-FMS_API_URL: https://fms.alliancegenome.org
-API_KEY: # Defaults to None when blank.
-
+-RELEASE_VERSION: 3.0.0
+-FMS_API_URL: https://fms.alliancegenome.org
+-API_KEY: # Defaults to None when blank.

@@ -47,7 +47,7 @@ class ProcessInteractions(object):
         self.master_crossreference_dictionary['UniProtKB'] = dict()
         self.master_crossreference_dictionary['ENSEMBL'] = dict()
         self.master_crossreference_dictionary['NCBI_Gene'] = dict()
-        self.biogrid_ignore_set = set()
+        self.biogrid_ignore_set = set()		# don't need dict like genetic processing does
 
         # Load configuration data.
         config_file_loc = 'src/process/config/interactions.yaml'
@@ -86,31 +86,32 @@ class ProcessInteractions(object):
                 self.download_file('https://download.alliancegenome.org/' + s3_filepath, config_entry + '.json')
 
         # Download interaction files from the Alliance, including IMEx and BioGRID.
-        list_of_source_files = ['FB', 'WB', 'IMEX', 'BIOGRID-PSI', 'BIOGRID-ORGANISM']
+        list_of_source_files = ['FB', 'WB', 'IMEX', 'BIOGRID-PSI', 'BIOGRID-TAB']
 
         for entry in list_of_source_files:
             logger.info('Obtaining interaction source files from the file management system.')
             logger.info('Querying for {}'.format(entry))
             query_url = api_url + '/api/datafile/by/{}/{}/{}?latest=true'\
                                   .format(release_version, 'INTERACTION-MOL-SOURCE', entry)
+            logger.info('Querying at {}'.format(query_url))
             with urllib.request.urlopen(query_url) as url:
                 data = json.loads(url.read().decode())
                 s3_filepath = data[0]['s3Path']
                 logger.info('S3 filepath: {}'.format(s3_filepath))
 
-                if entry == 'IMEX' or entry == 'BIOGRID-PSI' or entry == 'BIOGRID-ORGANISM':
+                if entry == 'IMEX' or entry == 'BIOGRID-PSI' or entry == 'BIOGRID-TAB':
                     self.download_file('https://download.alliancegenome.org/' + s3_filepath, entry + '.zip')
                 else:
                     self.download_file('https://download.alliancegenome.org/' + s3_filepath, entry)
 
-                if entry == 'IMEX' or entry == 'BIOGRID-PSI': # These need to be unzipped here. BIOGRID-ORGANISM is handled separately.
+                if entry == 'IMEX' or entry == 'BIOGRID-PSI' or entry == 'BIOGRID-TAB':
                     logger.info('Extracting file {}.zip with unzip.'.format(entry))
                     os.system('unzip /usr/src/app/download/{}.zip -d /usr/src/app/download/tmp'.format(entry))
                     logger.info('Renaming extracted file to {}.txt'.format(entry))
                     if entry == 'IMEX':  # Special exception for IMEX because it's 2 files.
                         os.system('mv /usr/src/app/download/tmp/intact.txt /usr/src/app/download/{}.txt'.format(entry))
                         os.system('rm /usr/src/app/download/tmp/*')
-                    elif entry == 'BIOGRID-PSI':
+                    elif entry == 'BIOGRID-PSI' or entry == 'BIOGRID-TAB':
                         os.system('mv /usr/src/app/download/tmp/* /usr/src/app/download/{}.txt'.format(entry))
                 elif entry == 'FB' or entry == 'WB':
                     os.system('mv /usr/src/app/download/{} /usr/src/app/download/{}.txt'.format(entry, entry))
@@ -168,20 +169,14 @@ class ProcessInteractions(object):
         logger.info('Done.')
 
     def create_rna_protein_ignore(self):
-        # Unzip the BioGRID organism file.
-        logger.info('Extracting BioGRID organism file with unzip.')
-        os.system('unzip /usr/src/app/download/BIOGRID-ORGANISM.zip -d /usr/src/app/download/organism')
+        tab20_filename = '/usr/src/app/download/BIOGRID-TAB.txt'
+        with open(tab20_filename, 'r', encoding='utf-8') as tab20in:
+            csv_reader = csv.reader(tab20in, delimiter='\t', quoting=csv.QUOTE_NONE)
+            next(csv_reader, None) # Skip the headers
+            for row in tqdm(csv_reader):
+                if 'RNA' in row[11]:
+                    self.biogrid_ignore_set.add(row[0])
 
-        # Generate the ignore list by iterating through the individual organism files.
-        for name in glob.glob('/usr/src/app/download/organism/*'):
-            for filter_list_item in self.config['BIOGRID_FILTER']:
-                if filter_list_item in name:
-                    logger.info('Processing filter file: {}'.format(name))
-                    with open(name) as tsvfile:
-                        reader = csv.reader(tsvfile, delimiter='\t')
-                        for row in tqdm(reader):
-                            if 'RNA' in row[11]:
-                                self.biogrid_ignore_set.add(row[0])
 
 
     def resolve_identifiers_by_row(self, row, mapped_out):
@@ -349,16 +344,16 @@ class ProcessInteractions(object):
         publication_tracking_dict = {}
 
         # Open all of the output files.
-        with open('output/alliance_molecular_interactions.tsv', 'w', encoding='utf-8') as tsvout, \
-             open('output/skipped_entries.txt', 'w', encoding='utf-8') as skipped_out, \
-             open('output/alliance_molecular_interactions_fly.tsv', 'w', encoding='utf-8') as fb_out, \
-             open('output/alliance_molecular_interactions_worm.tsv', 'w', encoding='utf-8') as wb_out, \
-             open('output/alliance_molecular_interactions_zebrafish.tsv', 'w', encoding='utf-8') as zfin_out, \
-             open('output/alliance_molecular_interactions_yeast.tsv', 'w', encoding='utf-8') as sgd_out, \
-             open('output/alliance_molecular_interactions_rat.tsv', 'w', encoding='utf-8') as rgd_out, \
-             open('output/alliance_molecular_interactions_mouse.tsv', 'w', encoding='utf-8') as mgi_out, \
-             open('output/alliance_molecular_interactions_human.tsv', 'w', encoding='utf-8') as human_out, \
-             open('output/mapped_entries.txt', 'a+', encoding='utf-8') as mapped_out:
+        with open('/usr/src/app/output/alliance_molecular_interactions.tsv', 'w', encoding='utf-8') as tsvout, \
+             open('/usr/src/app/output/skipped_entries.txt', 'w', encoding='utf-8') as skipped_out, \
+             open('/usr/src/app/output/alliance_molecular_interactions_fly.tsv', 'w', encoding='utf-8') as fb_out, \
+             open('/usr/src/app/output/alliance_molecular_interactions_worm.tsv', 'w', encoding='utf-8') as wb_out, \
+             open('/usr/src/app/output/alliance_molecular_interactions_zebrafish.tsv', 'w', encoding='utf-8') as zfin_out, \
+             open('/usr/src/app/output/alliance_molecular_interactions_yeast.tsv', 'w', encoding='utf-8') as sgd_out, \
+             open('/usr/src/app/output/alliance_molecular_interactions_rat.tsv', 'w', encoding='utf-8') as rgd_out, \
+             open('/usr/src/app/output/alliance_molecular_interactions_mouse.tsv', 'w', encoding='utf-8') as mgi_out, \
+             open('/usr/src/app/output/alliance_molecular_interactions_human.tsv', 'w', encoding='utf-8') as human_out, \
+             open('/usr/src/app/output/mapped_entries.txt', 'a+', encoding='utf-8') as mapped_out:
 
             mapped_out = csv.writer(mapped_out, quotechar = '', quoting=csv.QUOTE_NONE, delimiter='\t')
             tsvout = csv.writer(tsvout, quotechar = '', quoting=csv.QUOTE_NONE, delimiter='\t')
