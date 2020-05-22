@@ -1,0 +1,18 @@
+schemaVersion:
+  regex: ^(\d(\.\d){3})$
+  required: True
+releaseVersion: 
+  regex: ^(\d(\.\d){2})$
+  required: True
+BGI:
+  type: list
+  allowed: [FB, SGD, WB, ZFIN, RGD, MGI, HUMAN]
+INTERACTION-SOURCE:
+  type: list
+  allowed: [WB-GEN, FB-GEN, WB-MOL, FB-MOL, IMEX, BIOGRID, BIOGRID-TAB]
+FileTransactorThreads:
+  type: integer
+  required: True
+Neo4jTransactorThreads:
+  type: integer
+  required: True

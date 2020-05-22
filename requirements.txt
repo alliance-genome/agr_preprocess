@@ -5,3 +5,5 @@ retry
 tqdm
 strict-rfc3339
 requests
+jsonref
+cerberus
