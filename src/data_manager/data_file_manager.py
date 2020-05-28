@@ -165,9 +165,6 @@ class DataFileManager(metaclass=Singleton):
 
     def query_submission_system(self):
 
-        # The list of tuples below is created to filter out submission system data against our config file.
-        ontologies_to_transform = ('GO', 'DOID', 'MI', 'ECOMAP')  # These have non-generic loaders.
-
         self.transformed_submission_system_data['releaseVersion'] = self.snapshot_submission_system_data['snapShot']['releaseVersion']['releaseVersion']
 
         config_values_to_ignore = [
@@ -185,7 +182,7 @@ class DataFileManager(metaclass=Singleton):
                       # to process by querying the api for the latest path 
                     submission_system_dict = self._query_api_datafile_latest(datatype, sub_datatype)
                       # to process by using the release snapshot for that path
-#                     submission_system_dict = self._search_submission_data(datatype, sub_datatype)
+#                   submission_system_dict = self._search_submission_data(datatype, sub_datatype)
 
                     path = submission_system_dict.get('s3Path')
                     logger.debug("datatype %s sub_datatype %s path %s" % (datatype, sub_datatype, path))
@@ -194,13 +191,7 @@ class DataFileManager(metaclass=Singleton):
                     if tempExtractedFile is None or tempExtractedFile == '':
                         tempExtractedFile = submission_system_dict.get('s3Path')
 
-                    # Special case for storing ontologies with non-generic loaders.
-                    if sub_datatype in ontologies_to_transform and datatype == 'ONTOLOGY':
-                        logger.debug(sub_datatype)
-                        self.transformed_submission_system_data[sub_datatype] = []
-                        self.transformed_submission_system_data[sub_datatype].append([sub_datatype, path, tempExtractedFile])
-                    else:
-                        self.transformed_submission_system_data[datatype].append([sub_datatype, path, tempExtractedFile])
+                    self.transformed_submission_system_data[datatype].append([sub_datatype, path, tempExtractedFile])
             else:
                 logger.debug("Ignoring datatype: %s" % datatype)
                         

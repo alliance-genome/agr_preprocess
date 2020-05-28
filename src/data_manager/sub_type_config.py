@@ -75,8 +75,8 @@ class SubTypeConfig(object):
 
     def validate(self):
         if self.filepath is None:
-            logger.warn('No filepath found for sub type: %s from data type: %s ' % (self.sub_data_type, self.data_type))
-            logger.warn('Skipping validation.')
+            logger.warning('No filepath found for sub type: %s from data type: %s ' % (self.sub_data_type, self.data_type))
+            logger.warning('Skipping validation.')
             return
 
         # TODO -- The method below can be reworked once we switch to the submission system.
@@ -104,18 +104,13 @@ class SubTypeConfig(object):
         logger.debug("Attempting to validate: %s" % (self.filepath))
 
         schema_lookup_dict = {
-            'Disease': 'schemas/disease/diseaseMetaDataDefinition.json',
             'BGI': 'schemas/gene/geneMetaData.json',
-            'Orthology': 'schemas/orthology/orthologyMetaData.json',
-            'Allele': 'schemas/allele/alleleMetaData.json',
-            'Phenotype': 'schemas/phenotype/phenotypeMetaDataDefinition.json',
-            'Expression': 'schemas/expression/wildtypeExpressionMetaDataDefinition.json'
         }
 
         schema_file_name = schema_lookup_dict.get(self.data_type)
 
         if schema_file_name is None:
-            logger.warn('No schema or method found. Skipping validation.')
+            logger.warning('No schema or method found. Skipping validation.')
             return  # Exit validation.
 
         with open(self.filepath, encoding='utf-8') as data_file:
