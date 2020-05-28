@@ -1,0 +1,10 @@
+schemaVersion: 1.0.1.0
+releaseVersion: 3.1.0
+INTERACTION-SOURCE: [WB-MOL, FB-MOL, WB-GEN, FB-GEN, BIOGRID, BIOGRID-TAB, IMEX]
+BGI: [FB, SGD, WB, ZFIN, RGD, MGI, HUMAN]
+
+# Loader configuration values are below.
+# Please modify with caution!
+
+FileTransactorThreads: 10
+Neo4jTransactorThreads: 7

@@ -1,0 +1,11 @@
+{
+    "status": "success",
+    "message": null,
+    "snapShot": {
+        "releaseVersion": {"id":"1234", "name":"3.0.0"},
+        "system": "production",
+        "snapShotDate": 1523284823719,
+        "dataFiles": [
+        ]
+    }
+}
