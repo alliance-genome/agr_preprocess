@@ -5,14 +5,20 @@ import re
 import json
 import os
 import sys
-import strict_rfc3339
+import urllib.request
 import requests
 from tqdm import tqdm
+from datetime import datetime
+from string import Template
+
 
 from processor import Processor
 
 logger = logging.getLogger(__name__)
 
+
+class HeaderTemplate(Template):
+    delimiter = '%'
 
 
 class InteractionGeneticProcessor(Processor):
@@ -337,7 +343,8 @@ class InteractionGeneticProcessor(Processor):
             skipped_out = csv.writer(skipped_out, quotechar = '', quoting=csv.QUOTE_NONE, delimiter='\t')
             mapped_out = csv.writer(mapped_out, quotechar = '', quoting=csv.QUOTE_NONE, delimiter='\t')
 
-            out_write_list = [fb_out, wb_out, zfin_out, sgd_out, rgd_out, mgi_out, human_out]
+            # This list is now sorted phylogenetically for the header to be sorted
+            out_write_list = [human_out, rgd_out, mgi_out, zfin_out, fb_out, wb_out, sgd_out]
 
             taxon_file_dispatch_dict = {
                 'taxid:10116': rgd_out,
@@ -366,32 +373,52 @@ class InteractionGeneticProcessor(Processor):
                 fb_out: 'Drosophila melanogaster'
             }
 
+            out_to_header_taxonid_dict = {
+                rgd_out: 'NCBI:txid10116',
+                human_out: 'NCBI:txid9606',
+                mgi_out: 'NCBI:txid10090',
+                wb_out: 'NCBI:txid6239',
+                sgd_out: 'NCBI:txid559292',
+                zfin_out: 'NCBI:txid7955',
+                fb_out: 'NCBI:txid7227'
+            }
+
             # Write the comments in the main file.
-            the_time = strict_rfc3339.now_to_rfc3339_localoffset()
-            tsvout.writerow(['# Genetic Interactions'])
-            tsvout.writerow(['# Alliance of Genome Resources'])
-            tsvout.writerow(['# alliancegenome.org'])
-            tsvout.writerow(['# alliance-helpdesk@lists.stanford.edu'])
-            tsvout.writerow(['#'])
-            tsvout.writerow(['# PSI-MI TAB 2.7 Format'])
-            tsvout.writerow(['# Alliance Version {}'.format(self.context_info.env['ALLIANCE_RELEASE'])])
-            tsvout.writerow(['# Date Produced: {}'.format(the_time)])
-            tsvout.writerow(['#'])
-            # Write the headers
+            filetype = 'Genetic Interactions'
+            data_format = 'PSI-MI TAB 2.7 Format'
+            database_version = self.context_info.env["ALLIANCE_RELEASE"]
+            species_list = []
+            taxon_list = []
+            for entry in out_write_list:
+                taxon_list.append(out_to_header_taxonid_dict[entry])
+                species_list.append(out_to_species_name_dict[entry])
+            species = ", ".join(species_list)
+            taxon_ids = ", ".join(taxon_list)
+            taxon_ids = '# TaxonIDs: {}'.format(taxon_ids)
+            gen_time = datetime.utcnow().strftime("%Y-%m-%d %H:%M")
+            readme = 'https://github.com/HUPO-PSI/miTab/blob/master/PSI-MITAB27Format.md'
+            response = urllib.request.urlopen(self.context_info.env["HEADER_TEMPLATE_URL"])
+            header_template = HeaderTemplate(response.read().decode('ascii'))
+            header_dict = {'filetype': filetype, 'data_format': data_format, 'stringency_filter': '',
+                           'taxon_ids': taxon_ids, 'database_version': database_version, 'species': species, 
+                           'gen_time': gen_time, 'readme': readme}
+            header = header_template.substitute(header_dict)
+            header_rows = [line.strip() for line in header.splitlines() if len(line.strip()) != 0]
+            for header_row in header_rows:
+                tsvout.writerow([header_row])
             tsvout.writerow(psi_mi_tab_header)
 
             for entry in out_write_list:
-                the_time = strict_rfc3339.now_to_rfc3339_localoffset()
-                entry.writerow(['# Genetic Interactions for {}'.format(out_to_species_name_dict[entry])])
-                entry.writerow(['# Alliance of Genome Resources'])
-                entry.writerow(['# alliancegenome.org'])
-                entry.writerow(['# alliance-helpdesk@lists.stanford.edu'])
-                entry.writerow(['#'])
-                entry.writerow(['# PSI-MI TAB 2.7 Format'])
-                entry.writerow(['# Alliance Version {}'.format(self.context_info.env['ALLIANCE_RELEASE'])])
-                entry.writerow(['# Date Produced: {}'.format(the_time)])
-                entry.writerow(['#'])
-                # Write the headers
+                filetype = 'Genetic Interactions'
+                species = out_to_species_name_dict[entry]
+                taxon_ids = '# TaxonIDs: {}'.format(out_to_header_taxonid_dict[entry])
+                header_dict = {'filetype': filetype, 'data_format': data_format, 'stringency_filter': '',
+                               'taxon_ids': taxon_ids, 'database_version': database_version, 'species': species, 
+                               'gen_time': gen_time, 'readme': readme}
+                header = header_template.substitute(header_dict)
+                header_rows = [line.strip() for line in header.splitlines() if len(line.strip()) != 0]
+                for header_row in header_rows:
+                    entry.writerow([header_row])
                 entry.writerow(psi_mi_tab_header)
 
             psi_mi_tab_header.insert(0,'Reason for skipping row.')
@@ -417,12 +444,6 @@ class InteractionGeneticProcessor(Processor):
                     for row in tqdm(csv_reader):
                         if row[0].startswith("#"):
                             row.insert(0,'Entry starts with # commented out or header')
-                            skipped_out.writerow(row)
-                            continue
-
-                        # Skip entries with unassigned pubmed IDs.
-                        if 'pubmed:unassigned' in row[8]:
-                            row.insert(0,'Entry contains a pubmed:unassigned identifier.')
                             skipped_out.writerow(row)
                             continue
 
