@@ -6,7 +6,7 @@ ALLIANCE_RELEASE: "0.0.0"
 NEO4J_HOST: "localhost"
 NEO4J_PORT: 7687
 FMS_API_URL: "https://fms.alliancegenome.org"
-HEADER_TEMPLATE_URL: "https://raw.githubusercontent.com/alliance-genome/agr_file_generator/master/src/generators/header_template.txt"
+HEADER_TEMPLATE_URL: "https://raw.githubusercontent.com/alliance-genome/agr_file_generator/6fea7c7a12ef8f53de17f31f8a8bd3b468cb41e7/src/generators/header_template.txt"
 TEST_SET: false
 AWS_ACCESS_KEY: ""
 AWS_SECRET_KEY: ""
