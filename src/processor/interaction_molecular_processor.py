@@ -31,7 +31,10 @@ class InteractionMolecularProcessor(Processor):
         self.master_crossreference_dictionary['UniProtKB'] = dict()
         self.master_crossreference_dictionary['ENSEMBL'] = dict()
         self.master_crossreference_dictionary['NCBI_Gene'] = dict()
+        self.master_crossreference_dictionary['RefSeq'] = dict()
         self.biogrid_rna_set = set()
+        self.biogrid_doi_dict = dict()
+        self.coronavirus_injection_dict = dict()
         self.output_dir = '/usr/src/app/output/'
         self.download_dir = '/usr/src/app/download_molecular/'
 
@@ -105,6 +108,9 @@ class InteractionMolecularProcessor(Processor):
                         elif xref['id'].startswith('ENSEMBL'):
                             cross_ref_prefix = 'ENSEMBL'
                             cross_ref_record = xref['id']
+                        elif xref['id'].startswith('RefSeq'):
+                            cross_ref_prefix = 'RefSeq'
+                            cross_ref_record = xref['id']
 
                         # The crossreference dictionary is a list of genes linked to a single crossreference.
                         # Append the gene if the crossref dict entry exists.
@@ -118,6 +124,9 @@ class InteractionMolecularProcessor(Processor):
                                 self.master_crossreference_dictionary[cross_ref_prefix][cross_ref_record.lower()].append(
                                     gene_identifier)
 
+        # hardcoded exception that does not have a resolvable crossReference identifier in BGI
+        self.master_crossreference_dictionary['NCBI_Gene']['entrez gene/locuslink:ORF9c'.lower()] = ['RefSeq:P0DTD3']
+
                              # The ids in PSI-MITAB files are lower case, hence the .lower() used above.
         logger.info('Done.')
 
@@ -128,77 +137,93 @@ class InteractionMolecularProcessor(Processor):
         interactor_A_resolved = False
         interactor_B_resolved = False
 
-        for row_entry in interactor_A_rows:
-            try:
-                interactor_A_resolved, A_resolved_id = self.resolve_identifier(row[row_entry])
-                if interactor_A_resolved is True:
-                    logger.debug('interactor_A_resolved True : %s' % (A_resolved_id))
-                    break
-            except IndexError: # Biogrid has less rows than other files, continue on IndexErrors.
-                continue
+        taxon1 = re.search(r'taxid:\d+', row[9]).group(0)
+        taxon2 = re.search(r'taxid:\d+', row[10]).group(0)
 
+        interactor_A_list = []
+        for row_entry in interactor_A_rows:
+            if '|' in row[row_entry]:
+                interactors_A = row[row_entry].split('|')
+                for interactor_A in interactors_A:
+                    interactor_A = interactor_A.replace("uniprot/swiss-prot:", "uniprotkb:")
+                    interactor_A_list.append(interactor_A)
+            else:
+                interactor_A_list.append(row[row_entry])
+
+        interactor_B_list = []
         for row_entry in interactor_B_rows:
-            try:
-                interactor_B_resolved, B_resolved_id = self.resolve_identifier(row[row_entry])
-                if interactor_B_resolved is True:
-                    logger.debug('interactor_B_resolved True : %s' % (B_resolved_id))
-                    break
-            except IndexError: # Biogrid has less rows than other files, continue on IndexErrors.
-                continue
+            if '|' in row[row_entry]:
+                interactors_B = row[row_entry].split('|')
+                for interactor_B in interactors_B:
+                    interactor_B = interactor_B.replace("uniprot/swiss-prot:", "uniprotkb:")
+                    interactor_B_list.append(interactor_B)
+            else:
+                interactor_B_list.append(row[row_entry])
+
+        interactor_A_resolved, A_resolved_id = self.resolve_identifier(interactor_A_list, taxon1)
+        interactor_B_resolved, B_resolved_id = self.resolve_identifier(interactor_B_list, taxon2)
 
         if A_resolved_id is not None and B_resolved_id is not None:
             mapped_output_rows = [row[13], A_resolved_id, B_resolved_id]
             mapped_out.writerow(mapped_output_rows)
+            if taxon1 == 'taxid:2697049':	# for sars-cov-2 first match on refseq
+                if A_resolved_id in self.coronavirus_injection_dict:
+                    row[0] = self.coronavirus_injection_dict[A_resolved_id][0]
+                    row[2] = self.coronavirus_injection_dict[A_resolved_id][1]
+                    row[4] = self.coronavirus_injection_dict[A_resolved_id][2]
+            if taxon2 == 'taxid:2697049':	# for sars-cov-2 first match on refseq
+                if B_resolved_id in self.coronavirus_injection_dict:
+                    row[1] = self.coronavirus_injection_dict[B_resolved_id][0]
+                    row[3] = self.coronavirus_injection_dict[B_resolved_id][1]
+                    row[5] = self.coronavirus_injection_dict[B_resolved_id][2]
 
-        return interactor_A_resolved, interactor_B_resolved
+        return interactor_A_resolved, interactor_B_resolved, row
 
 
-    def resolve_identifier(self, row_entry):
-        logger.debug('resolving: %s' % (row_entry))
+    def resolve_identifier(self, interactor_list, taxon):
+
+        # The order of this list is important.
         list_of_crossref_regex_to_search = [
             'uniprotkb:[\\w\\d_-]*$',
             'ensembl:[\\w\\d_-]*$',
             'entrez gene/locuslink:.*$'
         ]
+        if taxon == 'taxid:2697049':	# for sars-cov-2, first match on refseq
+            list_of_crossref_regex_to_search.insert(0, 'refseq:[\\w\\d_-]*$')
 
-        # If we're dealing with multiple identifiers separated by a pipe.
-        if '|' in row_entry:
-            row_entries = row_entry.split('|')
-        else:
-            row_entries = [row_entry]
+        # Prioritize matching based on regex priority instead of column order
+        for regex_entry in list_of_crossref_regex_to_search:
+            for individual_entry in interactor_list:
+                # For use in wormbase / flybase lookups.
+                # If we run into an IndexError, there's no identifier to resolve and we return False.
+                try:
+                    entry_stripped = individual_entry.split(':')[1]
+                except IndexError:
+                    continue
 
-        for individual_entry in row_entries:
-            logger.debug('resolving individual_entry : %s' % (individual_entry))
+                # uniprotkb: could have trailing '-<something>' that should be stripped
+                if individual_entry.startswith('uniprotkb:'):
+                    if taxon != 'taxid:2697049':		# if not sars-cov-2 strip hyphen and after
+                        individual_entry = individual_entry.split('-')[0]
 
-            # For use in wormbase / flybase lookups.
-            # If we run into an IndexError, there's no identifier to resolve and we return False.
-            try:
-                entry_stripped = individual_entry.split(':')[1]
-            except IndexError:
-                return False, None
+                prefixed_identifier = None
+                logger.debug('resolving individual_entry : %s ; taxon : %s' % (individual_entry, taxon))
 
-            # uniprotkb: could have trailing '-<something>' that should be stripped
-            if individual_entry.startswith('uniprotkb:'):
-                individual_entry = individual_entry.split('-')[0]
+                if entry_stripped.startswith('WB'):
+                    prefixed_identifier = 'WB:' + entry_stripped
+                    if prefixed_identifier in self.master_gene_set:
+                        return True, prefixed_identifier
+                    else:
+                        logger.debug('resolved WB False : ' + prefixed_identifier)
+                        return False, None
+                elif entry_stripped.startswith('FB'):
+                    prefixed_identifier = 'FB:' + entry_stripped
+                    if prefixed_identifier in self.master_gene_set:
+                        logger.debug('resolved FB False : ' + prefixed_identifier)
+                        return True, prefixed_identifier
+                    else:
+                        return False, None
 
-            prefixed_identifier = None
-
-            if entry_stripped.startswith('WB'):
-                prefixed_identifier = 'WB:' + entry_stripped
-                if prefixed_identifier in self.master_gene_set:
-                    return True, prefixed_identifier
-                else:
-                    logger.debug('resolved WB False : ' + prefixed_identifier)
-                    return False, None
-            elif entry_stripped.startswith('FB'):
-                prefixed_identifier = 'FB:' + entry_stripped
-                if prefixed_identifier in self.master_gene_set:
-                    logger.debug('resolved FB False : ' + prefixed_identifier)
-                    return True, prefixed_identifier
-                else:
-                    return False, None
-
-            for regex_entry in list_of_crossref_regex_to_search:
                 regex_output = re.findall(regex_entry, individual_entry)
                 if regex_output is not None:
                     for regex_match in regex_output: # We might have multiple regex matches. Search them all against our crossreferences.
@@ -206,10 +231,14 @@ class InteractionMolecularProcessor(Processor):
                         for crossreference_type in self.master_crossreference_dictionary.keys():
                             # Using lowercase in the identifier to be consistent with Alliance lowercase identifiers.
                             if identifier.lower() in self.master_crossreference_dictionary[crossreference_type]:
-                                return True, identifier.lower() # Return 'True' if we find an entry.
+                                if taxon == 'taxid:2697049':	# for sars-cov-2 get the first primaryId value that matches the identifier in the BGI
+                                    return True, self.master_crossreference_dictionary[crossreference_type][identifier.lower()][0].lower()	# Return 'True' if we find an entry.
+                                else:				# for other taxons return the identifier that matches in the BGI
+                                    return True, identifier.lower() # Return 'True' if we find an entry.
 
         # If we can't resolve any of the crossReferences, return None
-        logger.debug('resolved default False : ' + row_entry)
+        interactor_list_string = "\t".join(interactor_list)
+        logger.debug('resolved default False : ' + interactor_list_string)
         return False, None
 
 
@@ -223,14 +252,25 @@ class InteractionMolecularProcessor(Processor):
         else:
             os.system('mv {}tmp/* {}'.format(self.download_dir, filename))
 
+    def read_coronavirus_injection(self, coronavirus_injection_filename):
+        with open(coronavirus_injection_filename, 'r', encoding='utf-8') as coronavirus_injection_in:
+            csv_reader = csv.reader(coronavirus_injection_in, delimiter='\t', quoting=csv.QUOTE_NONE)
+            next(csv_reader, None) # Skip the headers
+            for row in tqdm(csv_reader):
+                if row[0].lower().startswith("refseq"):
+                    logger.debug('Mapping coronavirus_injection_dict %s' % (row[0].lower()))
+                    self.coronavirus_injection_dict[row[0].lower()] = [ row[0], row[1], row[2] ]
 
-    def create_rna_protein_set(self, tab30_filename):
+    def create_biogrid_mappings(self, tab30_filename):
         with open(tab30_filename, 'r', encoding='utf-8') as tab30in:
             csv_reader = csv.reader(tab30in, delimiter='\t', quoting=csv.QUOTE_NONE)
             next(csv_reader, None) # Skip the headers
             for row in tqdm(csv_reader):
                 if 'RNA' in row[11]:
                     self.biogrid_rna_set.add(row[0])
+                if row[14].lower().startswith("doi"):
+                    biogrid_key = 'biogrid:' + row[0]
+                    self.biogrid_doi_dict[biogrid_key] = row[14]
 
 
     def get_data(self):
@@ -253,11 +293,19 @@ class InteractionMolecularProcessor(Processor):
         tab30_filename_zip = source_filepaths['BIOGRID-TAB']
         tab30_filename = self.download_dir + 'INTERACTION-MOL_BIOGRID-TAB'
 
+        # comment this out on runs after the first one, to save time on unzipping large files
         self.unzip_to_filename(imex_filename_zip, imex_filename, 'IMEX')
         self.unzip_to_filename(biogrid_filename_zip, biogrid_filename, 'BIOGRID')
         self.unzip_to_filename(tab30_filename_zip, tab30_filename, 'BIOGRID-TAB')
 
-        self.create_rna_protein_set(tab30_filename)
+        # To use smaller subset files
+        # imex_filename = self.output_dir + 'IMEx_SARS-CoV-2-human-only_interactions.mitab.txt'
+        # biogrid_filename = self.output_dir + 'BioGRID_SARS-CoV-2-human-only_interactions.mitab.txt'
+
+        self.create_biogrid_mappings(tab30_filename)
+
+        coronavirus_injection_filename = 'curation/coronavirus_injection.tsv'
+        self.read_coronavirus_injection(coronavirus_injection_filename)
 
         # The order of this list is important.
         parsing_list = [wormbase_filename, flybase_filename, biogrid_filename, imex_filename]
@@ -276,6 +324,7 @@ class InteractionMolecularProcessor(Processor):
             'taxid:574961',
             'taxid:285006',
             'taxid:545124',
+            'taxid:2697049',
             'taxid:764097',
             '-')
         possible_yeast_taxon_set = ('taxid:4932', 'taxid:307796', 'taxid:643680', 'taxid:574961', 'taxid:285006', 'taxid:545124', 'taxid:764097')
@@ -333,6 +382,7 @@ class InteractionMolecularProcessor(Processor):
 
         # Open all of the output files.
         with open(self.output_dir + 'alliance_molecular_interactions.tsv', 'w', encoding='utf-8') as tsvout, \
+             open(self.output_dir + 'alliance_molecular_interactions_sarscov2.tsv', 'w', encoding='utf-8') as sarscov2_out, \
              open(self.output_dir + 'alliance_molecular_interactions_fly.tsv', 'w', encoding='utf-8') as fb_out, \
              open(self.output_dir + 'alliance_molecular_interactions_worm.tsv', 'w', encoding='utf-8') as wb_out, \
              open(self.output_dir + 'alliance_molecular_interactions_zebrafish.tsv', 'w', encoding='utf-8') as zfin_out, \
@@ -346,6 +396,7 @@ class InteractionMolecularProcessor(Processor):
             mapped_out = csv.writer(mapped_out, quotechar = '', quoting=csv.QUOTE_NONE, delimiter='\t')
             tsvout = csv.writer(tsvout, quotechar = '', quoting=csv.QUOTE_NONE, delimiter='\t')
             skipped_out = csv.writer(skipped_out, quotechar = '', quoting=csv.QUOTE_NONE, delimiter='\t')
+            sarscov2_out = csv.writer(sarscov2_out, quotechar='', quoting=csv.QUOTE_NONE, delimiter='\t')
             fb_out = csv.writer(fb_out, quotechar='', quoting=csv.QUOTE_NONE, delimiter='\t')
             wb_out = csv.writer(wb_out, quotechar='', quoting=csv.QUOTE_NONE, delimiter='\t')
             zfin_out = csv.writer(zfin_out, quotechar='', quoting=csv.QUOTE_NONE, delimiter='\t')
@@ -355,7 +406,7 @@ class InteractionMolecularProcessor(Processor):
             human_out = csv.writer(human_out, quotechar='', quoting=csv.QUOTE_NONE, delimiter='\t')
 
             # This list is now sorted phylogenetically for the header to be sorted
-            out_write_list = [human_out, rgd_out, mgi_out, zfin_out, fb_out, wb_out, sgd_out]
+            out_write_list = [human_out, rgd_out, mgi_out, zfin_out, fb_out, wb_out, sgd_out, sarscov2_out]
 
             taxon_file_dispatch_dict = {
                 'taxid:10116': rgd_out,
@@ -365,6 +416,7 @@ class InteractionMolecularProcessor(Processor):
                 'taxid:559292': sgd_out,
                 'taxid:7955': zfin_out,
                 'taxid:7227': fb_out,
+                'taxid:2697049': sarscov2_out,
                 'taxid:4932': sgd_out,
                 'taxid:307796': sgd_out,
                 'taxid:643680': sgd_out,
@@ -381,6 +433,7 @@ class InteractionMolecularProcessor(Processor):
                 wb_out: 'Caenorhabditis elegans',
                 sgd_out: 'Saccharomyces cerevisiae',
                 zfin_out: 'Danio rerio',
+                sarscov2_out: 'Severe acute respiratory syndrome coronavirus 2',
                 fb_out: 'Drosophila melanogaster'
             }
 
@@ -391,6 +444,7 @@ class InteractionMolecularProcessor(Processor):
                 wb_out: 'NCBI:txid6239',
                 sgd_out: 'NCBI:txid559292',
                 zfin_out: 'NCBI:txid7955',
+                sarscov2_out: 'NCBI:txid2697049',
                 fb_out: 'NCBI:txid7227'
             }
 
@@ -533,7 +587,8 @@ class InteractionMolecularProcessor(Processor):
                                 skipped_out.writerow(row)
                                 continue
 
-                        interactor_A_resolved, interactor_B_resolved = self.resolve_identifiers_by_row(row, mapped_out)
+
+                        interactor_A_resolved, interactor_B_resolved, row = self.resolve_identifiers_by_row(row, mapped_out)
 
                         if interactor_A_resolved is False and interactor_B_resolved is True:
                             row.insert(0,'Can\'t resolve interactor A identifier, alias, alternate id, or xref against the list of known Alliance identifiers.')
@@ -551,9 +606,22 @@ class InteractionMolecularProcessor(Processor):
                         # Grab the publication information
                         # Also creating a tuple "key" to use for filtering purposes.
                         if row[8] is not None:
+
+                            pubmed_unassigned = re.search(r'pubmed:unassigned', row[8])
+                            if pubmed_unassigned is not None:
+                                row.insert(0,'Pubmed value is unassigned')
+                                skipped_out.writerow(row)
+                                continue
+
                             publication_re = re.search(r'pubmed:\d+', row[8])
                             if publication_re is not None:
                                 publication = publication_re.group(0)
+
+                                if publication.startswith('pubmed:88880000'):
+                                    biogrid_key = row[13]
+                                    publication = self.biogrid_doi_dict[biogrid_key]
+                                    row[8] = self.biogrid_doi_dict[biogrid_key]
+
                                 # Capture everything up to the first parenthesis in the taxon column.
                                 taxon1 = re.search(r'taxid:\d+', row[9]).group(0)
                                 taxon2 = re.search(r'taxid:\d+', row[10]).group(0)
@@ -588,17 +656,23 @@ class InteractionMolecularProcessor(Processor):
 
                         self.wrote_to_file_already = False
 
-                        try:
-                            taxon_file_dispatch_dict[taxon1].writerow(row)
-                            self.wrote_to_file_already = True
-                        except KeyError:
-                            pass
 
-                        try:
-                            if self.wrote_to_file_already is False:
+                        if taxon1 == taxon2:
+                            try:
+                                taxon_file_dispatch_dict[taxon1].writerow(row)
+                            except KeyError:
+                                pass
+
+                        else:
+                            try:
+                                taxon_file_dispatch_dict[taxon1].writerow(row)
+                            except KeyError:
+                                pass
+
+                            try:
                                 taxon_file_dispatch_dict[taxon2].writerow(row)
-                        except KeyError:
-                            pass
+                            except KeyError:
+                                pass
 
 
     def validate_and_upload_files_to_fms(self):
@@ -608,6 +682,7 @@ class InteractionMolecularProcessor(Processor):
         upload_location_dict = {
             'alliance_molecular_interactions.tsv': 'COMBINED',
             'alliance_molecular_interactions_fly.tsv': 'FB',
+            'alliance_molecular_interactions_sarscov2.tsv': 'SARS-CoV-2',
             'alliance_molecular_interactions_worm.tsv': 'WB',
             'alliance_molecular_interactions_zebrafish.tsv': 'ZFIN',
             'alliance_molecular_interactions_yeast.tsv': 'SGD',
