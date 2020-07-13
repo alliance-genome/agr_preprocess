@@ -85,7 +85,9 @@ class InteractionGeneticProcessor(Processor):
             with open(filepath) as json_file:
                 data = json.load(json_file)
                 logger.info('Scanning {}'.format(filepath))
-                for item in tqdm(data['data']):
+                # for local runs, to see progress
+                # for item in tqdm(data['data']):
+                for item in data['data']:
                     gene_identifier = item['basicGeneticEntity']['primaryId']
                     self.master_gene_set.add(gene_identifier)
 
@@ -441,7 +443,9 @@ class InteractionGeneticProcessor(Processor):
                 with open(filename, 'r', encoding='utf-8') as tsvin:
                     csv_reader = csv.reader(tsvin, delimiter='\t', quoting=csv.QUOTE_NONE)
 
-                    for row in tqdm(csv_reader):
+                    # for local runs, to see progress
+                    # for row in tqdm(csv_reader):
+                    for row in csv_reader:
                         if row[0].startswith("#"):
                             row.insert(0,'Entry starts with # commented out or header')
                             skipped_out.writerow(row)

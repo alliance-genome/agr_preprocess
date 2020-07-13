@@ -89,7 +89,9 @@ class InteractionMolecularProcessor(Processor):
             with open(filepath) as json_file:
                 data = json.load(json_file)
                 logger.info('Scanning {}'.format(filepath))
-                for item in tqdm(data['data']):
+                # for local runs, to see progress
+                # for item in tqdm(data['data']):
+                for item in data['data']:
                     gene_identifier = item['basicGeneticEntity']['primaryId']
                     self.master_gene_set.add(gene_identifier)
 
@@ -256,7 +258,9 @@ class InteractionMolecularProcessor(Processor):
         with open(coronavirus_injection_filename, 'r', encoding='utf-8') as coronavirus_injection_in:
             csv_reader = csv.reader(coronavirus_injection_in, delimiter='\t', quoting=csv.QUOTE_NONE)
             next(csv_reader, None) # Skip the headers
-            for row in tqdm(csv_reader):
+            # for local runs, to see progress
+            # for row in tqdm(csv_reader):
+            for row in csv_reader:
                 if row[0].lower().startswith("refseq"):
                     logger.debug('Mapping coronavirus_injection_dict %s' % (row[0].lower()))
                     self.coronavirus_injection_dict[row[0].lower()] = [ row[0], row[1], row[2] ]
@@ -265,7 +269,9 @@ class InteractionMolecularProcessor(Processor):
         with open(tab30_filename, 'r', encoding='utf-8') as tab30in:
             csv_reader = csv.reader(tab30in, delimiter='\t', quoting=csv.QUOTE_NONE)
             next(csv_reader, None) # Skip the headers
-            for row in tqdm(csv_reader):
+            # for local runs, to see progress
+            # for row in tqdm(csv_reader):
+            for row in csv_reader:
                 if 'RNA' in row[11]:
                     self.biogrid_rna_set.add(row[0])
                 if row[14].lower().startswith("doi"):
@@ -508,7 +514,9 @@ class InteractionMolecularProcessor(Processor):
                 with open(filename, 'r', encoding='utf-8') as tsvin:
                     csv_reader = csv.reader(tsvin, delimiter='\t', quoting=csv.QUOTE_NONE)
 
-                    for row in tqdm(csv_reader):
+                    # for local runs, to see progress
+                    # for row in tqdm(csv_reader):
+                    for row in csv_reader:
                         if row[0].startswith("#"):
                             row.insert(0,'Entry starts with # commented out or header')
                             skipped_out.writerow(row)
