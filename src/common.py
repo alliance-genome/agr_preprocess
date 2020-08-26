@@ -23,7 +23,7 @@ class ContextInfo(metaclass=Singleton):
     def __init__(self):
         # set default context info here
         config_file = open('src/default_env_vars.yml')
-        self.env = yaml.load(config_file, Loader=yaml.FullLoader)
+        self.env = yaml.load(config_file, Loader=yaml.SafeLoader)
 
         # Look for ENV variables to replace default variables from config file.
         for key in self.env.keys():
