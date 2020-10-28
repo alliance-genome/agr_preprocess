@@ -3,7 +3,7 @@ logger = logging.getLogger(__name__)
 
 import os
 import urllib.request
-
+from .gzip_file import GZIPFile
 
 class Download(object):
 
@@ -36,7 +36,11 @@ class Download(object):
             logger.debug("Making temp file storage: %s" % (self.savepath))
             os.makedirs(self.savepath)
         if not os.path.exists(os.path.join(self.savepath, self.filenameToSave)):
-            urllib.request.urlretrieve(self.urlToRetrieve, os.path.join(self.savepath, self.filenameToSave))
+            if self.urlToRetrieve.endswith('gz'):
+                urllib.request.urlretrieve(self.urlToRetrieve, os.path.join(self.savepath, self.filenameToSave + ".gz"))
+                GZIPFile(os.path.join(self.savepath, self.filenameToSave + ".gz")).extract()
+            else:
+                urllib.request.urlretrieve(self.urlToRetrieve, os.path.join(self.savepath, self.filenameToSave))
             return False
         else:
             logger.info("File: %s/%s already exists not downloading" % (self.savepath, self.filenameToSave))
