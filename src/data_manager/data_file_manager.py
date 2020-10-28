@@ -5,6 +5,7 @@ from cerberus import Validator
 from files import JSONFile
 from common import Singleton
 from common import ContextInfo
+from urllib.parse import urlparse
 from .data_type_config import DataTypeConfig
 
 logger = logging.getLogger(__name__)
@@ -153,11 +154,11 @@ class DataFileManager(metaclass=Singleton):
         endpoint_submission_system_data = json.loads(submission_data.data.decode('UTF-8'))
         logger.debug(endpoint_submission_system_data)
 
-        s3Path = endpoint_submission_system_data[0].get('s3Path')
+        s3Url = endpoint_submission_system_data[0].get('s3Url')
         returned_dict = {
             'dataType': dataType,
             'subType': dataSubType,
-            's3Path': s3Path,
+            's3Url': s3Url,
             'tempExtractedFile': None
         }
         return returned_dict
@@ -184,12 +185,14 @@ class DataFileManager(metaclass=Singleton):
                       # to process by using the release snapshot for that path
 #                   submission_system_dict = self._search_submission_data(datatype, sub_datatype)
 
-                    path = submission_system_dict.get('s3Path')
+                    path = submission_system_dict.get('s3Url')
                     logger.debug("datatype %s sub_datatype %s path %s" % (datatype, sub_datatype, path))
                     tempExtractedFile = submission_system_dict.get('tempExtractedFile')
-                    logger.debug("tempExtractedFile %s" % tempExtractedFile)
                     if tempExtractedFile is None or tempExtractedFile == '':
-                        tempExtractedFile = submission_system_dict.get('s3Path')
+                        tempExtractedFile = urlparse(submission_system_dict.get('s3Url')).path[1:]
+                        tempExtractedFile = os.path.basename(tempExtractedFile)
+                        if tempExtractedFile is not None and len(tempExtractedFile) > 0 and tempExtractedFile.endswith('gz'):
+                            tempExtractedFile = os.path.splitext(tempExtractedFile)[0]
 
                     self.transformed_submission_system_data[datatype].append([sub_datatype, path, tempExtractedFile])
             else:
