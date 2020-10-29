@@ -6,7 +6,6 @@ import json
 import os
 import sys
 import urllib.request
-import requests
 from tqdm import tqdm
 from datetime import datetime
 from string import Template
@@ -614,33 +613,11 @@ class InteractionGeneticProcessor(Processor):
         thread_pool = []
 
         for filename in upload_location_dict.keys():
-            upload_location = upload_location_dict[filename]
-            compressed_filename = "INTERACTION-GEN_{}.tar.gz".format(upload_location)
+            dataSubType = upload_location_dict[filename]
 
-            p = multiprocessing.Process(target=self._compress_and_upload, args=(compressed_filename, filename, upload_location))
+            p = multiprocessing.Process(target=super().fms_upload, args=("INTERACTION-GEN", dataSubType, filename))
             p.start()
             thread_pool.append(p)
 
         Processor.wait_for_threads(thread_pool)
 
-
-    def _compress_and_upload(self, compressed_filename, filename, upload_location):
-        os.chdir(self.output_dir)
-        logger.info('Compressing file: {}'.format(filename))
-        os.system("tar -czvf {} {}".format(compressed_filename, filename))
-        logger.info("tar -czvf {} {}".format(compressed_filename, filename))
-
-        upload_file_prefix = '{}_{}_{}'.format(self.context_info.env['ALLIANCE_RELEASE'], 'INTERACTION-GEN', upload_location)
-        file_to_upload = {upload_file_prefix: open(self.output_dir + compressed_filename, 'rb')}
-
-#         self.context_info.env['API_KEY'] = '<insert key here>'      # if don't have have API_KEY in config file, could enter here
-        headers = {
-            'Authorization': 'Bearer {}'.format(self.context_info.env['API_KEY'])
-        }
-
-        logger.info('Attempting upload of data file: {}'.format(compressed_filename))
-        logger.debug('Attempting upload with header: {}'.format(headers))
-        logger.info("Uploading data to {}) ...".format(self.context_info.env['FMS_API_URL'] + '/api/data/submit/'))
-
-        response = requests.post(self.context_info.env['FMS_API_URL'] + '/api/data/submit/', files=file_to_upload, headers=headers)
-        logger.info(response.text)
