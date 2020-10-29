@@ -80,8 +80,8 @@ class Processor(object):
         }
 
         logger.info('Attempting upload of data file: {}'.format(filepath_compressed))
-        logger.debug('Attempting upload with header: {}'.format(headers))
-        logger.info("Uploading data to {}) ...".format(self.context_info.env['FMS_API_URL'] + '/api/data/submit/'))
+        logger.info('Attempting upload with header: {}'.format(headers))
+        logger.info("Uploading data to %s %s %s) ...", upload_file_prefix, filepath_uncompressed, self.context_info.env['FMS_API_URL'] + '/api/data/submit/')
 
         response = requests.post(self.context_info.env['FMS_API_URL'] + '/api/data/submit/', files=file_to_upload, headers=headers)
         logger.info(response.text)
