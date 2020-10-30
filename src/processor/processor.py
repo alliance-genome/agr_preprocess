@@ -2,6 +2,9 @@ import logging
 import os, sys
 import time
 from common import ContextInfo
+import requests
+import gzip
+import shutil
 
 logger = logging.getLogger(__name__)
 
@@ -58,3 +61,27 @@ class Processor(object):
             query_and_file_names.append([query_to_run, file_name])
 
         return query_and_file_names
+
+    def fms_upload(self, dataType, dataSubType, filepath_uncompressed):
+
+        filepath_compressed = filepath_uncompressed + ".gz"
+
+        with open(self.output_dir + filepath_uncompressed, 'rb') as f_in:
+            with gzip.open(self.output_dir + filepath_compressed, 'wb') as f_out:
+               shutil.copyfileobj(f_in, f_out)
+
+        upload_file_prefix = '{}_{}_{}'.format(self.context_info.env['ALLIANCE_RELEASE'], dataType, dataSubType)
+
+        file_to_upload = {upload_file_prefix: open(self.output_dir + filepath_compressed, 'rb')}
+
+#       self.context_info.env['API_KEY'] = '<insert key here>'      # if don't have have API_KEY in config file, could enter here
+        headers = {
+            'Authorization': 'Bearer {}'.format(self.context_info.env['API_KEY'])
+        }
+
+        logger.info('Attempting upload of data file: {}'.format(filepath_compressed))
+        logger.info('Attempting upload with header: {}'.format(headers))
+        logger.info("Uploading data to %s %s %s) ...", upload_file_prefix, filepath_uncompressed, self.context_info.env['FMS_API_URL'] + '/api/data/submit/')
+
+        response = requests.post(self.context_info.env['FMS_API_URL'] + '/api/data/submit/', files=file_to_upload, headers=headers)
+        logger.info(response.text)
