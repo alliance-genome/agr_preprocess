@@ -450,6 +450,11 @@ class InteractionGeneticProcessor(Processor):
                             skipped_out.writerow(row)
                             continue
 
+                        if row[8] == '-':
+                            row.insert(0,'Column 9 is blank, no publication')
+                            skipped_out.writerow(row)
+                            continue
+
                         if filename_type == 'biogrid':
                             if row[11] not in approved_col12:
                                 row.insert(0,'col12 does not have an approved value: {}.'.format(row[11]))
