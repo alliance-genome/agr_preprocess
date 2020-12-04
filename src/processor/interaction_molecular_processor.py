@@ -275,7 +275,10 @@ class InteractionMolecularProcessor(Processor):
                     self.biogrid_rna_set.add(row[0])
                 if row[14].lower().startswith("doi"):
                     biogrid_key = 'biogrid:' + row[0]
-                    self.biogrid_doi_dict[biogrid_key] = row[14]
+                    self.biogrid_doi_dict[biogrid_key] = row[14].lower()
+                elif row[14].lower().startswith("pubmed"):
+                    biogrid_key = 'biogrid:' + row[0]
+                    self.biogrid_doi_dict[biogrid_key] = row[14].lower()
 
 
     def get_data(self):
@@ -635,7 +638,7 @@ class InteractionMolecularProcessor(Processor):
                                         publication = self.biogrid_doi_dict[biogrid_key]
                                         row[8] = self.biogrid_doi_dict[biogrid_key]
                                     else:
-                                        row.insert(0,'Column 9 has pubmed:88880000 but biogrid_key %s does not match RNA line in biogrid-tab file' % (biogrid_key))
+                                        row.insert(0,'Column 9 has pubmed:88880000 but biogrid_key %s does not have valid mapping in biogrid-tab3 file' % (biogrid_key))
                                         skipped_out.writerow(row)
                                         continue
 
