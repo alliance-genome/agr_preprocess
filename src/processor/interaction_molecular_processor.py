@@ -292,11 +292,11 @@ class InteractionMolecularProcessor(Processor):
         wormbase_filename = source_filepaths['WB-MOL']
         flybase_filename = source_filepaths['FB-MOL']
         imex_filename_zip = source_filepaths['IMEX']
-        imex_filename = self.download_dir + 'INTERACTION-MOL_IMEX'
+        imex_filename = self.download_dir + 'INTERACTION-SOURCE_IMEX'
         biogrid_filename_zip = source_filepaths['BIOGRID']
-        biogrid_filename = self.download_dir + 'INTERACTION-MOL_BIOGRID'
+        biogrid_filename = self.download_dir + 'INTERACTION-SOURCE_BIOGRID'
         tab30_filename_zip = source_filepaths['BIOGRID-TAB']
-        tab30_filename = self.download_dir + 'INTERACTION-MOL_BIOGRID-TAB'
+        tab30_filename = self.download_dir + 'INTERACTION-SOURCE_BIOGRID-TAB'
 
         # comment this out on runs after the first one, to save time on unzipping large files
         self.unzip_to_filename(imex_filename_zip, imex_filename, 'IMEX')
@@ -521,6 +521,11 @@ class InteractionMolecularProcessor(Processor):
                             skipped_out.writerow(row)
                             continue
 
+                        if row[8] == '-':
+                            row.insert(0,'Column 9 is blank, no publication')
+                            skipped_out.writerow(row)
+                            continue
+
                         if filename_type == 'biogrid':
                             biogrid_interaction_id = re.findall(r'\d+', row[13])[0]
                             # We need to add '-' characters to columns 17-42 for biogrid entries.
@@ -626,8 +631,13 @@ class InteractionMolecularProcessor(Processor):
 
                                 if publication.startswith('pubmed:88880000'):
                                     biogrid_key = row[13]
-                                    publication = self.biogrid_doi_dict[biogrid_key]
-                                    row[8] = self.biogrid_doi_dict[biogrid_key]
+                                    if biogrid_key in self.biogrid_doi_dict:
+                                        publication = self.biogrid_doi_dict[biogrid_key]
+                                        row[8] = self.biogrid_doi_dict[biogrid_key]
+                                    else:
+                                        row.insert(0,'Column 9 has pubmed:88880000 but biogrid_key %s does not match RNA line in biogrid-tab file' % (biogrid_key))
+                                        skipped_out.writerow(row)
+                                        continue
 
                                 # Capture everything up to the first parenthesis in the taxon column.
                                 taxon1 = re.search(r'taxid:\d+', row[9]).group(0)
