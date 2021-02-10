@@ -2,7 +2,7 @@ version: "2"
 
 services:
   agr_preprocess:
-    image: ${REG}/agr_preprocess_run:latest
+    image: ${REG}/agr_preprocess_run:${DOCKER_IMAGE_TAG}
     networks:
       - esnet
 
