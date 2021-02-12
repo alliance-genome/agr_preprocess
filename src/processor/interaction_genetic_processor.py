@@ -227,23 +227,42 @@ class InteractionGeneticProcessor(Processor):
             'psi-mi:"MI:0796"(suppressive genetic interaction defined by inequality)',
             'psi-mi:"MI:0799"(additive genetic interaction defined by inequality)')
         genetic_interaction_terms = {
-            'Dosage Growth Defect': { '19': '-', '20': '-' },
-            'Dosage Lethality': { '19': '-', '20': '-' },
+            'Dosage Growth Defect': {
+                '12': 'psi-mi:"MI:2378"(dosage growth defect (sensu biogrid))',
+                '19': '-', '20': '-' },
+            'Dosage Lethality': {
+                '12': 'psi-mi:"MI:2377"(dosage lethality (sensu biogrid))',
+                '19': '-', '20': '-' },
             'Dosage Rescue': {
+                '12': 'psi-mi:"MI:2376"(dosage rescue (sensu biogrid))',
                 '19': 'psi-mi:"MI:0582"(suppressed gene)',
                 '20': 'psi-mi:"MI:0581"(suppressor gene)' },
-            'Negative Genetic': { '19': '-', '20': '-' },
+            'Negative Genetic': {
+                '12': 'psi-mi:"MI:2373"(negative genetic interaction (sensu biogrid))',
+                '19': '-', '20': '-' },
             'Phenotypic Enhancement': {
+                '12': 'psi-mi:"MI:2368"(phenotypic enhancement (sensu biogrid))',
                 '19': 'psi-mi:"MI:2352"(enhanced gene)',
                 '20': 'psi-mi:"MI:2351"(enhancer gene)' },
             'Phenotypic Suppression': {
+                '12': 'psi-mi:"MI:2374"(phenotypic suppression (sensu biogrid))',
                 '19': 'psi-mi:"MI:0582"(suppressed gene)',
                 '20': 'psi-mi:"MI:0581"(suppressor gene)' },
-            'Positive Genetic': { '19': '-', '20': '-' },
-            'Synthetic Growth Defect': { '19': '-', '20': '-' },
-            'Synthetic Haploinsufficiency': { '19': '-', '20': '-' },
-            'Synthetic Lethality': { '19': '-', '20': '-' },
-            'Synthetic Rescue': { '19': '-', '20': '-' } }
+            'Positive Genetic': {
+                '12': 'psi-mi:"MI:2371"(positive genetic interaction (sensu biogrid))',
+                '19': '-', '20': '-' },
+            'Synthetic Growth Defect': {
+                '12': 'psi-mi:"MI:2369"(synthetic growth defect (sensu biogrid))',
+                '19': '-', '20': '-' },
+            'Synthetic Haploinsufficiency': {
+                '12': 'psi-mi:"MI:2372"(synthetic haploinsufficiency (sensu biogrid))',
+                '19': '-', '20': '-' },
+            'Synthetic Lethality': {
+                '12': 'psi-mi:"MI:2370"(synthetic lethality (sensu biogrid))',
+                '19': '-', '20': '-' },
+            'Synthetic Rescue': {
+                '12': 'psi-mi:"MI:2375"(synthetic rescue (sensu biogrid))',
+                '19': '-', '20': '-' } }
 
         source_filepaths = dict()
         interaction_source_config = self.data_type_configs[0]
@@ -401,7 +420,7 @@ class InteractionGeneticProcessor(Processor):
             response = urllib.request.urlopen(self.context_info.env["HEADER_TEMPLATE_URL"])
             header_template = HeaderTemplate(response.read().decode('ascii'))
             header_dict = {'filetype': filetype, 'data_format': data_format, 'stringency_filter': '',
-                           'taxon_ids': taxon_ids, 'database_version': database_version, 'species': species, 
+                           'taxon_ids': taxon_ids, 'database_version': database_version, 'species': species,
                            'gen_time': gen_time, 'readme': readme}
             header = header_template.substitute(header_dict)
             header_rows = [line.strip() for line in header.splitlines() if len(line.strip()) != 0]
@@ -414,7 +433,7 @@ class InteractionGeneticProcessor(Processor):
                 species = out_to_species_name_dict[entry]
                 taxon_ids = '# TaxonIDs: {}'.format(out_to_header_taxonid_dict[entry])
                 header_dict = {'filetype': filetype, 'data_format': data_format, 'stringency_filter': '',
-                               'taxon_ids': taxon_ids, 'database_version': database_version, 'species': species, 
+                               'taxon_ids': taxon_ids, 'database_version': database_version, 'species': species,
                                'gen_time': gen_time, 'readme': readme}
                 header = header_template.substitute(header_dict)
                 header_rows = [line.strip() for line in header.splitlines() if len(line.strip()) != 0]
@@ -476,17 +495,12 @@ class InteractionGeneticProcessor(Processor):
                             row[21] = 'psi-mi:"MI:0250"(gene)'
                             row[35] = 'false'
 
-                            if row[12] != 'psi-mi:"MI:0463"(biogrid)':
-                                row.insert(0,'psi-mi file column13 does not say psi-mi:"MI:0463"(biogrid)')
-                                skipped_out.writerow(row)
-                                continue
-
                             match_genetic_interaction_type = re.search("\((.+)\)", row[6])
                             row[11] = match_genetic_interaction_type.group(1)
                             if row[11] in genetic_interaction_terms:
                                 row[18] = genetic_interaction_terms[row[11]]['19']
                                 row[19] = genetic_interaction_terms[row[11]]['20']
-                            row[11] = 'biogrid:' + row[11]
+                                row[11] = genetic_interaction_terms[row[11]]['12']
                             row[27] = ontology_terms
                             row[6] = 'psi-mi:"MI:0254"(genetic interference)'
 
