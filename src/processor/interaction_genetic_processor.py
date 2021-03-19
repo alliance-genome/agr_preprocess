@@ -223,9 +223,21 @@ class InteractionGeneticProcessor(Processor):
 
     def get_data(self):
         approved_col12 = (
-            'psi-mi:"MI:0794"(synthetic genetic interaction defined by inequality)',
-            'psi-mi:"MI:0796"(suppressive genetic interaction defined by inequality)',
-            'psi-mi:"MI:0799"(additive genetic interaction defined by inequality)')
+            # these three values were removed and replaced with the MI:2368-MI:2378 values  2021 03 19
+            # 'psi-mi:"MI:0794"(synthetic genetic interaction defined by inequality)',
+            # 'psi-mi:"MI:0796"(suppressive genetic interaction defined by inequality)',
+            # 'psi-mi:"MI:0799"(additive genetic interaction defined by inequality)',
+            'psi-mi:"MI:2368"("phenotypic enhancement (sensu biogrid)")',
+            'psi-mi:"MI:2369"("synthetic growth defect (sensu biogrid)")',
+            'psi-mi:"MI:2370"("synthetic lethality (sensu biogrid)")',
+            'psi-mi:"MI:2371"("positive genetic interaction (sensu biogrid)")',
+            'psi-mi:"MI:2372"("synthetic haploinsufficiency (sensu biogrid)")',
+            'psi-mi:"MI:2373"("negative genetic interaction (sensu biogrid)")',
+            'psi-mi:"MI:2374"("phenotypic suppression (sensu biogrid)")',
+            'psi-mi:"MI:2375"("synthetic rescue (sensu biogrid)")',
+            'psi-mi:"MI:2376"("dosage rescue (sensu biogrid)")',
+            'psi-mi:"MI:2377"("dosage lethality (sensu biogrid)")',
+            'psi-mi:"MI:2378"("dosage growth defect (sensu biogrid)")')
         genetic_interaction_terms = {
             'Dosage Growth Defect': {
                 '12': 'psi-mi:"MI:2378"(dosage growth defect (sensu biogrid))',
