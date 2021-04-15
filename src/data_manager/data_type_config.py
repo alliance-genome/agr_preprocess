@@ -23,6 +23,9 @@ class DataTypeConfig(object):
         if "SAVE_PATH" in context_info.env:
             if context_info.env["SAVE_PATH"]:
                 path = context_info.env["SAVE_PATH"]
+                if not os.path.exists(path):
+                    logger.info("Making temp file storage: %s" % (path))
+                    os.makedirs(path)
 
         # Create our subtype objects.
         for downloadable_item in self.submission_system_data:

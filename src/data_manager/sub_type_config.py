@@ -42,6 +42,9 @@ class SubTypeConfig(object):
         if "SAVE_PATH" in context_info.env:
             if context_info.env["SAVE_PATH"]:
                 path = context_info.env["SAVE_PATH"]
+                if not os.path.exists(path):
+                    logger.info("Making temp file storage: %s" % (path))
+                    os.makedirs(path)
 
         if self.filepath is not None:
             if not os.path.isfile(self.filepath):
