@@ -33,7 +33,7 @@ class Download(object):
     def get_downloaded_data_new(self):
         logger.info("Downloading data from ... " + self.urlToRetrieve)
         if not os.path.exists(self.savepath):
-            logger.debug("Making temp file storage: %s" % (self.savepath))
+            logger.info("Making temp file storage: %s" % (self.savepath))
             os.makedirs(self.savepath)
         if not os.path.exists(os.path.join(self.savepath, self.filenameToSave)):
             if self.urlToRetrieve.endswith('gz'):
