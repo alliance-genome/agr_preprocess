@@ -32,6 +32,7 @@ class InteractionMolecularProcessor(Processor):
         self.master_crossreference_dictionary['NCBI_Gene'] = dict()
         self.master_crossreference_dictionary['RefSeq'] = dict()
         self.biogrid_rna_set = set()
+        self.biogrid_genetic_set = set()
         self.biogrid_doi_dict = dict()
         self.coronavirus_injection_dict = dict()
         self.output_dir = '/usr/src/app/output/'
@@ -265,6 +266,18 @@ class InteractionMolecularProcessor(Processor):
                     self.coronavirus_injection_dict[row[0].lower()] = [ row[0], row[1], row[2] ]
 
     def create_biogrid_mappings(self, tab30_filename):
+        genetic_col12 = (
+            'Dosage Growth Defect',
+            'Dosage Lethality',
+            'Dosage Rescue',
+            'Negative Genetic',
+            'Phenotypic Enhancement',
+            'Phenotypic Suppression',
+            'Positive Genetic',
+            'Synthetic Growth Defect',
+            'Synthetic Haploinsufficiency',
+            'Synthetic Lethality',
+            'Synthetic Rescue')
         with open(tab30_filename, 'r', encoding='utf-8') as tab30in:
             csv_reader = csv.reader(tab30in, delimiter='\t', quoting=csv.QUOTE_NONE)
             next(csv_reader, None) # Skip the headers
@@ -273,6 +286,10 @@ class InteractionMolecularProcessor(Processor):
             for row in csv_reader:
                 if 'RNA' in row[11]:
                     self.biogrid_rna_set.add(row[0])
+                if row[12] == 'genetic' and row[11] in genetic_col12:
+                    self.biogrid_genetic_set.add(row[0])
+                if row[12] == 'Experimental System Type' and row[11] == 'Experimental System':
+                    self.biogrid_genetic_set.add(row[0])
                 if row[14].lower().startswith("doi"):
                     biogrid_key = 'biogrid:' + row[0]
                     self.biogrid_doi_dict[biogrid_key] = row[14].lower()
@@ -282,6 +299,32 @@ class InteractionMolecularProcessor(Processor):
 
 
     def get_data(self):
+        rejected_col7 = (
+            # these are genetic interaction values and should not go into molecular output
+            'biogrid:BIOGRID_SYSTEM:0000010(Synthetic Lethality)',
+            'biogrid:BIOGRID_SYSTEM:0000011(Synthetic Growth Defect)',
+            'biogrid:BIOGRID_SYSTEM:0000012(Synthetic Rescue)',
+            'biogrid:BIOGRID_SYSTEM:0000013(Dosage Lethality)',
+            'biogrid:BIOGRID_SYSTEM:0000014(Dosage Growth Defect)',
+            'biogrid:BIOGRID_SYSTEM:0000015(Dosage Rescue)',
+            'biogrid:BIOGRID_SYSTEM:0000016(Phenotypic Enhancement)',
+            'biogrid:BIOGRID_SYSTEM:0000017(Phenotypic Suppression)',
+            'biogrid:BIOGRID_SYSTEM:0000028(Synthetic Haploinsufficiency)',
+            'biogrid:BIOGRID_SYSTEM:0000029(Negative Genetic)',
+            'biogrid:BIOGRID_SYSTEM:0000030(Positive Genetic)')
+        rejected_col12 = (
+            # these are genetic interaction values and should not go into molecular output
+            'psi-mi:"MI:2368"("phenotypic enhancement (sensu biogrid)")',
+            'psi-mi:"MI:2369"("synthetic growth defect (sensu biogrid)")',
+            'psi-mi:"MI:2370"("synthetic lethality (sensu biogrid)")',
+            'psi-mi:"MI:2371"("positive genetic interaction (sensu biogrid)")',
+            'psi-mi:"MI:2372"("synthetic haploinsufficiency (sensu biogrid)")',
+            'psi-mi:"MI:2373"("negative genetic interaction (sensu biogrid)")',
+            'psi-mi:"MI:2374"("phenotypic suppression (sensu biogrid)")',
+            'psi-mi:"MI:2375"("synthetic rescue (sensu biogrid)")',
+            'psi-mi:"MI:2376"("dosage rescue (sensu biogrid)")',
+            'psi-mi:"MI:2377"("dosage lethality (sensu biogrid)")',
+            'psi-mi:"MI:2378"("dosage growth defect (sensu biogrid)")')
         source_filepaths = dict()
         interaction_source_config = self.data_type_configs[0]
         for sub_type in interaction_source_config.get_sub_type_objects():
@@ -530,7 +573,22 @@ class InteractionMolecularProcessor(Processor):
                             continue
 
                         if filename_type == 'biogrid':
+                            if row[11] in rejected_col12:
+                                row.insert(0,'col12 does not have an approved value: {}.'.format(row[11]))
+                                skipped_out.writerow(row)
+                                continue
+
+                            if row[6] in rejected_col7:
+                                row.insert(0,'col7 does not have an approved value: {}.'.format(row[6]))
+                                skipped_out.writerow(row)
+                                continue
+
                             biogrid_interaction_id = re.findall(r'\d+', row[13])[0]
+                            if biogrid_interaction_id in self.biogrid_genetic_set:
+                                row.insert(0,'biogrid_interaction_id genetic in tab 3.0: {}.'.format(biogrid_interaction_id))
+                                skipped_out.writerow(row)
+                                continue
+
                             # We need to add '-' characters to columns 17-42 for biogrid entries.
                             for _ in range(17,43):
                                 row.append('-')
