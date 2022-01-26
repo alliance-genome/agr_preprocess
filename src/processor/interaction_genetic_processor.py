@@ -501,9 +501,8 @@ class InteractionGeneticProcessor(Processor):
                             for entry in ontology_terms:
                                 entry = re.sub(r":type:([^:]+)$", r";type(\1)", entry)
                                 entry = re.sub(r":", r"_", entry)
-                                parsed_ontology_terms.append(entry)
+                                parsed_ontology_terms.append('biogrid:' + entry)
                             ontology_terms = "|".join(parsed_ontology_terms)
-                            ontology_terms = 'biogrid:' + ontology_terms
 
                             # We need to add '-' characters to columns 17-42 for biogrid entries.
                             for _ in range(17,43):
