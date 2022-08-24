@@ -98,7 +98,7 @@ class InteractionMolecularProcessor(Processor):
                     for xref in item['basicGeneticEntity']['crossReferences']:
                         cross_ref_record = None
                         cross_ref_prefix = None
-                        if xref['id'].startswith('NCBI_Gene'):
+                        if xref['id'].lower().startswith('ncbi_gene'):
                             # Modify the cross reference ID to match the PSI MITAB format if necessary.
                             # So far, this is just converting 'NCBI_Gene' to 'entrez gene/locuslink'.
                             cross_ref_prefix = 'NCBI_Gene'
@@ -377,6 +377,8 @@ class InteractionMolecularProcessor(Processor):
             'taxid:545124',
             'taxid:2697049',
             'taxid:764097',
+            'taxid:8355',
+            'taxid:8364',
             '-')
         possible_yeast_taxon_set = ('taxid:4932', 'taxid:307796', 'taxid:643680', 'taxid:574961', 'taxid:285006', 'taxid:545124', 'taxid:764097')
         interaction_exclusion_set = ('psi-mi:\"MI:0208\"', 'psi-mi:\"MI:0794\"', 'psi-mi:\"MI:0796\"', 'psi-mi:\"MI:0799\"')
@@ -436,6 +438,7 @@ class InteractionMolecularProcessor(Processor):
              open(self.output_dir + 'alliance_molecular_interactions_sarscov2.tsv', 'w', encoding='utf-8') as sarscov2_out, \
              open(self.output_dir + 'alliance_molecular_interactions_fly.tsv', 'w', encoding='utf-8') as fb_out, \
              open(self.output_dir + 'alliance_molecular_interactions_worm.tsv', 'w', encoding='utf-8') as wb_out, \
+             open(self.output_dir + 'alliance_molecular_interactions_xenopus.tsv', 'w', encoding='utf-8') as xb_out, \
              open(self.output_dir + 'alliance_molecular_interactions_zebrafish.tsv', 'w', encoding='utf-8') as zfin_out, \
              open(self.output_dir + 'alliance_molecular_interactions_yeast.tsv', 'w', encoding='utf-8') as sgd_out, \
              open(self.output_dir + 'alliance_molecular_interactions_rat.tsv', 'w', encoding='utf-8') as rgd_out, \
@@ -450,6 +453,7 @@ class InteractionMolecularProcessor(Processor):
             sarscov2_out = csv.writer(sarscov2_out, quotechar='', quoting=csv.QUOTE_NONE, delimiter='\t')
             fb_out = csv.writer(fb_out, quotechar='', quoting=csv.QUOTE_NONE, delimiter='\t')
             wb_out = csv.writer(wb_out, quotechar='', quoting=csv.QUOTE_NONE, delimiter='\t')
+            xb_out = csv.writer(xb_out, quotechar='', quoting=csv.QUOTE_NONE, delimiter='\t')
             zfin_out = csv.writer(zfin_out, quotechar='', quoting=csv.QUOTE_NONE, delimiter='\t')
             sgd_out = csv.writer(sgd_out, quotechar='', quoting=csv.QUOTE_NONE, delimiter='\t')
             rgd_out = csv.writer(rgd_out, quotechar='', quoting=csv.QUOTE_NONE, delimiter='\t')
@@ -457,7 +461,7 @@ class InteractionMolecularProcessor(Processor):
             human_out = csv.writer(human_out, quotechar='', quoting=csv.QUOTE_NONE, delimiter='\t')
 
             # This list is now sorted phylogenetically for the header to be sorted
-            out_write_list = [human_out, rgd_out, mgi_out, zfin_out, fb_out, wb_out, sgd_out, sarscov2_out]
+            out_write_list = [human_out, rgd_out, mgi_out, xb_out, zfin_out, fb_out, wb_out, sgd_out, sarscov2_out]
 
             taxon_file_dispatch_dict = {
                 'taxid:10116': rgd_out,
@@ -468,6 +472,8 @@ class InteractionMolecularProcessor(Processor):
                 'taxid:7955': zfin_out,
                 'taxid:7227': fb_out,
                 'taxid:2697049': sarscov2_out,
+                'taxid:8355': xb_out,
+                'taxid:8364': xb_out,
                 'taxid:4932': sgd_out,
                 'taxid:307796': sgd_out,
                 'taxid:643680': sgd_out,
@@ -482,6 +488,7 @@ class InteractionMolecularProcessor(Processor):
                 human_out: 'Homo sapiens',
                 mgi_out: 'Mus musculus',
                 wb_out: 'Caenorhabditis elegans',
+                xb_out: 'Xenopus laevis',
                 sgd_out: 'Saccharomyces cerevisiae',
                 zfin_out: 'Danio rerio',
                 sarscov2_out: 'Severe acute respiratory syndrome coronavirus 2',
@@ -493,6 +500,7 @@ class InteractionMolecularProcessor(Processor):
                 human_out: 'NCBI:txid9606',
                 mgi_out: 'NCBI:txid10090',
                 wb_out: 'NCBI:txid6239',
+                xb_out: 'NCBI:txid8355',
                 sgd_out: 'NCBI:txid559292',
                 zfin_out: 'NCBI:txid7955',
                 sarscov2_out: 'NCBI:txid2697049',
@@ -762,6 +770,7 @@ class InteractionMolecularProcessor(Processor):
             'alliance_molecular_interactions_fly.tsv': 'FB',
             'alliance_molecular_interactions_sarscov2.tsv': 'SARS-CoV-2',
             'alliance_molecular_interactions_worm.tsv': 'WB',
+            'alliance_molecular_interactions_xenopus.tsv': 'XB',
             'alliance_molecular_interactions_zebrafish.tsv': 'ZFIN',
             'alliance_molecular_interactions_yeast.tsv': 'SGD',
             'alliance_molecular_interactions_rat.tsv': 'RGD',

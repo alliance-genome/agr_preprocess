@@ -1,7 +1,7 @@
 schemaVersion: 1.0.1.0
 releaseVersion: 3.1.1
 INTERACTION-SOURCE: [WB-MOL, FB-MOL, WB-GEN, FB-GEN, BIOGRID, BIOGRID-TAB, IMEX]
-BGI: [FB, SGD, WB, ZFIN, RGD, MGI, HUMAN, SARS-CoV-2]
+BGI: [FB, SGD, WB, ZFIN, RGD, MGI, HUMAN, XBXL, XBXT, SARS-CoV-2]
 
 # Loader configuration values are below.
 # Please modify with caution!

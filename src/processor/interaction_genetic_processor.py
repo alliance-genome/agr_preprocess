@@ -93,7 +93,7 @@ class InteractionGeneticProcessor(Processor):
                     for xref in item['basicGeneticEntity']['crossReferences']:
                         cross_ref_record = None
                         cross_ref_prefix = None
-                        if xref['id'].startswith('NCBI_Gene'):
+                        if xref['id'].lower().startswith('ncbi_gene'):
                             # Modify the cross reference ID to match the PSI MITAB format if necessary.
                             # So far, this is just converting 'NCBI_Gene' to 'entrez gene/locuslink'.
                             cross_ref_prefix = 'NCBI_Gene'
@@ -302,6 +302,8 @@ class InteractionGeneticProcessor(Processor):
             'taxid:6239',
             'taxid:559292',
             'taxid:7955',
+            'taxid:8355',
+            'taxid:8364',
             'taxid:7227')
 
         possible_yeast_taxon_set = ('taxid:4932', 'taxid:307796', 'taxid:643680', 'taxid:574961', 'taxid:285006', 'taxid:545124', 'taxid:764097')
@@ -356,6 +358,7 @@ class InteractionGeneticProcessor(Processor):
         with open(self.output_dir + 'alliance_genetic_interactions.tsv', 'w', encoding='utf-8') as tsvout, \
              open(self.output_dir + 'alliance_genetic_interactions_fly.tsv', 'w', encoding='utf-8') as fb_out, \
              open(self.output_dir + 'alliance_genetic_interactions_worm.tsv', 'w', encoding='utf-8') as wb_out, \
+             open(self.output_dir + 'alliance_genetic_interactions_xenopus.tsv', 'w', encoding='utf-8') as xb_out, \
              open(self.output_dir + 'alliance_genetic_interactions_zebrafish.tsv', 'w', encoding='utf-8') as zfin_out, \
              open(self.output_dir + 'alliance_genetic_interactions_yeast.tsv', 'w', encoding='utf-8') as sgd_out, \
              open(self.output_dir + 'alliance_genetic_interactions_rat.tsv', 'w', encoding='utf-8') as rgd_out, \
@@ -367,6 +370,7 @@ class InteractionGeneticProcessor(Processor):
             tsvout = csv.writer(tsvout, quotechar = '', quoting=csv.QUOTE_NONE, delimiter='\t')
             fb_out = csv.writer(fb_out, quotechar='', quoting=csv.QUOTE_NONE, delimiter='\t')
             wb_out = csv.writer(wb_out, quotechar='', quoting=csv.QUOTE_NONE, delimiter='\t')
+            xb_out = csv.writer(xb_out, quotechar='', quoting=csv.QUOTE_NONE, delimiter='\t')
             zfin_out = csv.writer(zfin_out, quotechar='', quoting=csv.QUOTE_NONE, delimiter='\t')
             sgd_out = csv.writer(sgd_out, quotechar='', quoting=csv.QUOTE_NONE, delimiter='\t')
             rgd_out = csv.writer(rgd_out, quotechar='', quoting=csv.QUOTE_NONE, delimiter='\t')
@@ -376,7 +380,7 @@ class InteractionGeneticProcessor(Processor):
             mapped_out = csv.writer(mapped_out, quotechar = '', quoting=csv.QUOTE_NONE, delimiter='\t')
 
             # This list is now sorted phylogenetically for the header to be sorted
-            out_write_list = [human_out, rgd_out, mgi_out, zfin_out, fb_out, wb_out, sgd_out]
+            out_write_list = [human_out, rgd_out, mgi_out, xb_out, zfin_out, fb_out, wb_out, sgd_out]
 
             taxon_file_dispatch_dict = {
                 'taxid:10116': rgd_out,
@@ -386,6 +390,8 @@ class InteractionGeneticProcessor(Processor):
                 'taxid:559292': sgd_out,
                 'taxid:7955': zfin_out,
                 'taxid:7227': fb_out,
+                'taxid:8355': xb_out,
+                'taxid:8364': xb_out,
                 'taxid:4932': sgd_out,
                 'taxid:307796': sgd_out,
                 'taxid:643680': sgd_out,
@@ -400,6 +406,7 @@ class InteractionGeneticProcessor(Processor):
                 human_out: 'Homo sapiens',
                 mgi_out: 'Mus musculus',
                 wb_out: 'Caenorhabditis elegans',
+                xb_out: 'Xenopus laevis',
                 sgd_out: 'Saccharomyces cerevisiae',
                 zfin_out: 'Danio rerio',
                 fb_out: 'Drosophila melanogaster'
@@ -410,6 +417,7 @@ class InteractionGeneticProcessor(Processor):
                 human_out: 'NCBI:txid9606',
                 mgi_out: 'NCBI:txid10090',
                 wb_out: 'NCBI:txid6239',
+                xb_out: 'NCBI:txid8355',
                 sgd_out: 'NCBI:txid559292',
                 zfin_out: 'NCBI:txid7955',
                 fb_out: 'NCBI:txid7227'
@@ -640,6 +648,7 @@ class InteractionGeneticProcessor(Processor):
             'alliance_genetic_interactions.tsv': 'COMBINED',
             'alliance_genetic_interactions_fly.tsv': 'FB',
             'alliance_genetic_interactions_worm.tsv': 'WB',
+            'alliance_genetic_interactions_xenopus.tsv': 'XB',
             'alliance_genetic_interactions_zebrafish.tsv': 'ZFIN',
             'alliance_genetic_interactions_yeast.tsv': 'SGD',
             'alliance_genetic_interactions_rat.tsv': 'RGD',
