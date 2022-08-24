@@ -6,7 +6,7 @@ releaseVersion:
   required: True
 BGI:
   type: list
-  allowed: [FB, SGD, WB, ZFIN, RGD, MGI, HUMAN, SARS-CoV-2]
+  allowed: [FB, SGD, WB, ZFIN, RGD, MGI, HUMAN, XBXT, XBXL, SARS-CoV-2]
 INTERACTION-SOURCE:
   type: list
   allowed: [WB-GEN, FB-GEN, WB-MOL, FB-MOL, IMEX, BIOGRID, BIOGRID-TAB]
