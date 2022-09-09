@@ -30,6 +30,7 @@ class InteractionGeneticProcessor(Processor):
         self.master_crossreference_dictionary['UniProtKB'] = dict()
         self.master_crossreference_dictionary['ENSEMBL'] = dict()
         self.master_crossreference_dictionary['NCBI_Gene'] = dict()
+        self.taxon_used_dict = dict()
         self.output_dir = '/usr/src/app/output/'
         self.download_dir = '/usr/src/app/download_genetic/'
 
@@ -359,6 +360,8 @@ class InteractionGeneticProcessor(Processor):
              open(self.output_dir + 'alliance_genetic_interactions_fly.tsv', 'w', encoding='utf-8') as fb_out, \
              open(self.output_dir + 'alliance_genetic_interactions_worm.tsv', 'w', encoding='utf-8') as wb_out, \
              open(self.output_dir + 'alliance_genetic_interactions_xenopus.tsv', 'w', encoding='utf-8') as xb_out, \
+             open(self.output_dir + 'alliance_genetic_interactions_xenopus_laevis.tsv', 'w', encoding='utf-8') as xbxl_out, \
+             open(self.output_dir + 'alliance_genetic_interactions_xenopus_tropicalis.tsv', 'w', encoding='utf-8') as xbxt_out, \
              open(self.output_dir + 'alliance_genetic_interactions_zebrafish.tsv', 'w', encoding='utf-8') as zfin_out, \
              open(self.output_dir + 'alliance_genetic_interactions_yeast.tsv', 'w', encoding='utf-8') as sgd_out, \
              open(self.output_dir + 'alliance_genetic_interactions_rat.tsv', 'w', encoding='utf-8') as rgd_out, \
@@ -371,6 +374,8 @@ class InteractionGeneticProcessor(Processor):
             fb_out = csv.writer(fb_out, quotechar='', quoting=csv.QUOTE_NONE, delimiter='\t')
             wb_out = csv.writer(wb_out, quotechar='', quoting=csv.QUOTE_NONE, delimiter='\t')
             xb_out = csv.writer(xb_out, quotechar='', quoting=csv.QUOTE_NONE, delimiter='\t')
+            xbxl_out = csv.writer(xbxl_out, quotechar='', quoting=csv.QUOTE_NONE, delimiter='\t')
+            xbxt_out = csv.writer(xbxt_out, quotechar='', quoting=csv.QUOTE_NONE, delimiter='\t')
             zfin_out = csv.writer(zfin_out, quotechar='', quoting=csv.QUOTE_NONE, delimiter='\t')
             sgd_out = csv.writer(sgd_out, quotechar='', quoting=csv.QUOTE_NONE, delimiter='\t')
             rgd_out = csv.writer(rgd_out, quotechar='', quoting=csv.QUOTE_NONE, delimiter='\t')
@@ -380,33 +385,38 @@ class InteractionGeneticProcessor(Processor):
             mapped_out = csv.writer(mapped_out, quotechar = '', quoting=csv.QUOTE_NONE, delimiter='\t')
 
             # This list is now sorted phylogenetically for the header to be sorted
-            out_write_list = [human_out, rgd_out, mgi_out, xb_out, zfin_out, fb_out, wb_out, sgd_out]
+            out_write_list = [human_out, rgd_out, mgi_out, xb_out, xbxl_out, xbxt_out, zfin_out, fb_out, wb_out, sgd_out]
 
             taxon_file_dispatch_dict = {
-                'taxid:10116': rgd_out,
-                'taxid:9606': human_out,
-                'taxid:10090': mgi_out,
-                'taxid:6239': wb_out,
-                'taxid:559292': sgd_out,
-                'taxid:7955': zfin_out,
-                'taxid:7227': fb_out,
-                'taxid:8355': xb_out,
-                'taxid:8364': xb_out,
-                'taxid:4932': sgd_out,
-                'taxid:307796': sgd_out,
-                'taxid:643680': sgd_out,
-                'taxid:574961': sgd_out,
-                'taxid:285006': sgd_out,
-                'taxid:545124': sgd_out,
-                'taxid:764097': sgd_out
+                'taxid:10116': [rgd_out],
+                'taxid:9606': [human_out],
+                'taxid:10090': [mgi_out],
+                'taxid:6239': [wb_out],
+                'taxid:559292': [sgd_out],
+                'taxid:7955': [zfin_out],
+                'taxid:7227': [fb_out],
+                'taxid:8355': [xbxl_out, xb_out],
+                'taxid:8364': [xbxt_out, xb_out],
+                'taxid:4932': [sgd_out],
+                'taxid:307796': [sgd_out],
+                'taxid:643680': [sgd_out],
+                'taxid:574961': [sgd_out],
+                'taxid:285006': [sgd_out],
+                'taxid:545124': [sgd_out],
+                'taxid:764097': [sgd_out]
             }
+
+            for taxon in taxon_file_dispatch_dict.keys():
+                self.taxon_used_dict[taxon] = 0
 
             out_to_species_name_dict = {
                 rgd_out: 'Rattus norvegicus',
                 human_out: 'Homo sapiens',
                 mgi_out: 'Mus musculus',
                 wb_out: 'Caenorhabditis elegans',
-                xb_out: 'Xenopus laevis',
+                xb_out: 'Xenopus laevis, Xenopus tropicalis',
+                xbxl_out: 'Xenopus laevis',
+                xbxt_out: 'Xenopus tropicalis',
                 sgd_out: 'Saccharomyces cerevisiae',
                 zfin_out: 'Danio rerio',
                 fb_out: 'Drosophila melanogaster'
@@ -417,7 +427,9 @@ class InteractionGeneticProcessor(Processor):
                 human_out: 'NCBI:txid9606',
                 mgi_out: 'NCBI:txid10090',
                 wb_out: 'NCBI:txid6239',
-                xb_out: 'NCBI:txid8355',
+                xb_out: 'NCBI:txid8355, NCBI:txid8364',
+                xbxl_out: 'NCBI:txid8355',
+                xbxt_out: 'NCBI:txid8364',
                 sgd_out: 'NCBI:txid559292',
                 zfin_out: 'NCBI:txid7955',
                 fb_out: 'NCBI:txid7227'
@@ -628,14 +640,18 @@ class InteractionGeneticProcessor(Processor):
                         self.wrote_to_file_already = False
 
                         try:
-                            taxon_file_dispatch_dict[taxon1].writerow(row)
+                            self.taxon_used_dict[taxon1] += 1
+                            for filehandle in taxon_file_dispatch_dict[taxon1]:
+                                filehandle.writerow(row)
                             self.wrote_to_file_already = True
                         except KeyError:
                             pass
 
                         try:
                             if self.wrote_to_file_already is False:
-                                taxon_file_dispatch_dict[taxon2].writerow(row)
+                                self.taxon_used_dict[taxon2] += 1
+                                for filehandle in taxon_file_dispatch_dict[taxon2]:
+                                    filehandle.writerow(row)
                         except KeyError:
                             pass
 
@@ -644,11 +660,26 @@ class InteractionGeneticProcessor(Processor):
         logger.info('Summary of files created:')
         logger.info(os.system("ls -alh {}*".format(self.output_dir)))
 
+        file_taxon_dict = {
+            'alliance_genetic_interactions_fly.tsv': ['taxid:7227'],
+            'alliance_genetic_interactions_worm.tsv': ['taxid:6239'],
+            'alliance_genetic_interactions_xenopus.tsv': ['taxid:8355', 'taxid:8364'],
+            'alliance_genetic_interactions_xenopus_laevis.tsv': ['taxid:8355'],
+            'alliance_genetic_interactions_xenopus_tropicalis.tsv': ['taxid:8364'],
+            'alliance_genetic_interactions_zebrafish.tsv': ['taxid:7955'],
+            'alliance_genetic_interactions_yeast.tsv': ['taxid:559292', 'taxid:307796', 'taxid:643680', 'taxid:574961', 'taxid:285006', 'taxid:545124', 'taxid:764097'],
+            'alliance_genetic_interactions_rat.tsv': ['taxid:10116'],
+            'alliance_genetic_interactions_mouse.tsv': ['taxid:10090'],
+            'alliance_genetic_interactions_human.tsv': ['taxid:9606'],
+        }
+
         upload_location_dict = {
             'alliance_genetic_interactions.tsv': 'COMBINED',
             'alliance_genetic_interactions_fly.tsv': 'FB',
             'alliance_genetic_interactions_worm.tsv': 'WB',
             'alliance_genetic_interactions_xenopus.tsv': 'XB',
+            'alliance_genetic_interactions_xenopus_laevis.tsv': 'XBXL',
+            'alliance_genetic_interactions_xenopus_tropicalis.tsv': 'XBXT',
             'alliance_genetic_interactions_zebrafish.tsv': 'ZFIN',
             'alliance_genetic_interactions_yeast.tsv': 'SGD',
             'alliance_genetic_interactions_rat.tsv': 'RGD',
@@ -657,13 +688,22 @@ class InteractionGeneticProcessor(Processor):
         }
 
         thread_pool = []
-
         for filename in upload_location_dict.keys():
-            dataSubType = upload_location_dict[filename]
+            upload_flag = False
+            if filename in file_taxon_dict:
+                for taxon in file_taxon_dict[filename]:
+                    if self.taxon_used_dict[taxon] > 0:
+                        upload_flag = True
+                    logger.info("filename %s taxon %s count %s" % (filename, taxon, self.taxon_used_dict[taxon]))
+            if filename == 'alliance_genetic_interactions.tsv':
+                upload_flag = True
+            if upload_flag:
+                logger.info("upload %s" % (upload_location_dict[filename]))
+                dataSubType = upload_location_dict[filename]
 
-            p = multiprocessing.Process(target=super().fms_upload, args=("INTERACTION-GEN", dataSubType, filename))
-            p.start()
-            thread_pool.append(p)
+                p = multiprocessing.Process(target=super().fms_upload, args=("INTERACTION-GEN", dataSubType, filename))
+                p.start()
+                thread_pool.append(p)
 
         Processor.wait_for_threads(thread_pool)
 
