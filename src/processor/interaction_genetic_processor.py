@@ -589,7 +589,7 @@ class InteractionGeneticProcessor(Processor):
                                     continue
 
                             # Skip entries which have 'Expansion method(s)'. These only come from IMEx
-                            if row[15] is not '-':
+                            if row[15] != '-':
                                 row.insert(0,'Contains an expansion method.')
                                 skipped_out.writerow(row)
                                 continue
