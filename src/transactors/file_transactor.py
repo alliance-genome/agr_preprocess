@@ -14,6 +14,8 @@ class FileTransactor(object):
 
     def __init__(self):
         m = multiprocessing.Manager()
+        print("Waiting 20 for multiprocessing.Manager to start")
+        sleep(20)
         FileTransactor.queue = m.Queue()
         self.filetracking_queue = m.list()
     
