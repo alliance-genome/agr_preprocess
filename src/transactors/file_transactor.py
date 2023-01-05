@@ -13,10 +13,9 @@ class FileTransactor(object):
     queue = None
 
     def __init__(self):
-        multiprocessing.set_start_method('fork')
         m = multiprocessing.Manager()
-        self.filetracking_queue = m.list()
         FileTransactor.queue = m.Queue()
+        self.filetracking_queue = m.list()
     
     def _get_name(self):
         return "FileTransactor %s" % multiprocessing.current_process().name
@@ -39,12 +38,11 @@ class FileTransactor(object):
 
     def wait_for_queues(self):
         FileTransactor.queue.join()
-        for thread in self.thread_pool:
-            thread.join()
         
     def shutdown(self):       
         logger.debug("Shutting down FileTransactor threads: %s" % len(self.thread_pool))
         for thread in self.thread_pool:
+            thread.join()
             thread.terminate()
         logger.debug("Finished Shutting down FileTransactor threads")
 
