@@ -34,6 +34,7 @@ class FileTransactor(object):
         logger.debug("Execute Transaction Batch: %s QueueSize: %s " % (FileTransactor.count, FileTransactor.queue.qsize()))  
 
     def check_for_thread_errors(self):
+        logger.info("Checking for Thread errors")
         Processor.wait_for_threads(self.thread_pool, FileTransactor.queue)
 
     def wait_for_queues(self):
@@ -42,7 +43,6 @@ class FileTransactor(object):
     def shutdown(self):       
         logger.debug("Shutting down FileTransactor threads: %s" % len(self.thread_pool))
         for thread in self.thread_pool:
-            thread.join()
             thread.terminate()
         logger.debug("Finished Shutting down FileTransactor threads")
 
