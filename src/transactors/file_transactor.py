@@ -10,11 +10,12 @@ logger = logging.getLogger(__name__)
 class FileTransactor(object):
 
     count = 0
+    queue = None
 
     def __init__(self):
         m = multiprocessing.Manager()
         self.filetracking_queue = m.list()
-        self.queue = m.Queue()
+        FileTransactor.queue = m.Queue()
     
     def _get_name(self):
         return "FileTransactor %s" % multiprocessing.current_process().name
@@ -29,14 +30,14 @@ class FileTransactor(object):
     @staticmethod
     def execute_transaction(sub_type):
         FileTransactor.count = FileTransactor.count + 1
-        self.queue.put((sub_type, FileTransactor.count))
+        FileTransactor.queue.put((sub_type, FileTransactor.count))
         logger.debug("Execute Transaction Batch: %s QueueSize: %s " % (FileTransactor.count, FileTransactor.queue.qsize()))  
 
     def check_for_thread_errors(self):
         Processor.wait_for_threads(self.thread_pool, FileTransactor.queue)
 
     def wait_for_queues(self):
-        self.queue.join()
+        FileTransactor.queue.join()
         for thread in self.thread_pool:
             thread.join()
         
@@ -50,13 +51,13 @@ class FileTransactor(object):
         logger.debug("%s: Starting FileTransactor Thread Runner." % self._get_name())
         while True:
             try:
-                (sub_type, FileTransactor.count) = self.queue.get()
+                (sub_type, FileTransactor.count) = FileTransactor.queue.get()
             except EOFError as error:
                 logger.debug("Queue Closed exiting: %s" % error)
                 return
-            logger.debug("%s: Pulled File Transaction Batch: %s QueueSize: %s " % (self._get_name(), FileTransactor.count, self.queue.qsize()))  
+            logger.debug("%s: Pulled File Transaction Batch: %s QueueSize: %s " % (self._get_name(), FileTransactor.count, FileTransactor.queue.qsize()))  
             self.download_file(sub_type, filetracking_queue)
-            self.queue.task_done()
+            FileTransactor.queue.task_done()
         #EOFError
 
     def download_file(self, sub_type, filetracking_queue):
