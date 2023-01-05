@@ -13,6 +13,7 @@ class FileTransactor(object):
     queue = None
 
     def __init__(self):
+        multiprocessing.set_start_method('fork')
         m = multiprocessing.Manager()
         self.filetracking_queue = m.list()
         FileTransactor.queue = m.Queue()
