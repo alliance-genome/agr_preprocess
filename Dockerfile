@@ -14,7 +14,7 @@ RUN mkdir download_molecular/tmp
 
 ADD requirements.txt .
 
-RUN pip3 install -r requirements.txt
+RUN pip3 install -r requirements.txt --break-system-packages
 
 ADD . .
 
