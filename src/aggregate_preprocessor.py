@@ -50,7 +50,7 @@ class AggregatePreprocessor(object):
 
         ft.start_threads(data_manager.get_FT_thread_settings())
         data_manager.download_and_validate()
-        logger.info("finished downloading now doing thread")
+        logger.info("finished downloading now doing thread cleanup")
         ft.check_for_thread_errors()
         logger.info("finished threads waiting for queues")
         ft.wait_for_queues()

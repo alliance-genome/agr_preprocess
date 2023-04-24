@@ -13,6 +13,9 @@ class FileTransactor(object):
     queue = None
 
     def __init__(self):
+        logger.info("Spawn Type: " + multiprocessing.get_start_method())
+        #multiprocessing.set_start_method('fork')
+        #multiprocessing.set_start_method("spawn")
         m = multiprocessing.Manager()
         FileTransactor.queue = m.Queue()
         self.filetracking_queue = m.list()
@@ -34,6 +37,7 @@ class FileTransactor(object):
         logger.debug("Execute Transaction Batch: %s QueueSize: %s " % (FileTransactor.count, FileTransactor.queue.qsize()))  
 
     def check_for_thread_errors(self):
+        logger.info("Checking for Thread errors")
         Processor.wait_for_threads(self.thread_pool, FileTransactor.queue)
 
     def wait_for_queues(self):
@@ -51,9 +55,9 @@ class FileTransactor(object):
             try:
                 (sub_type, FileTransactor.count) = FileTransactor.queue.get()
             except EOFError as error:
-                logger.debug("Queue Closed exiting: %s" % error)
+                logger.info("Queue Closed exiting: %s" % error)
                 return
-            logger.debug("%s: Pulled File Transaction Batch: %s QueueSize: %s " % (self._get_name(), FileTransactor.count, FileTransactor.queue.qsize()))  
+            logger.info("%s: Pulled File Transaction Batch: %s QueueSize: %s " % (self._get_name(), FileTransactor.count, FileTransactor.queue.qsize()))  
             self.download_file(sub_type, filetracking_queue)
             FileTransactor.queue.task_done()
         #EOFError
@@ -62,19 +66,19 @@ class FileTransactor(object):
         filepath = sub_type.get_filepath()
         filepath_to_download = sub_type.get_file_to_download()
 
-        logger.debug("%s: Acquiring file: %s from filepath: %s" % (self._get_name(), filepath, filepath_to_download))
+        logger.info("%s: Acquiring file: %s from filepath: %s" % (self._get_name(), filepath, filepath_to_download))
 
-        logger.debug("%s: Checking whether the file is currently downloading: %s" % (self._get_name(), filepath_to_download))
+        logger.info("%s: Checking whether the file is currently downloading: %s" % (self._get_name(), filepath_to_download))
 
         if filepath_to_download in filetracking_queue:
-            logger.debug("%s: The file is already downloading, waiting for it to finish: %s" % (self._get_name(), filepath_to_download))
+            logger.info("%s: The file is already downloading, waiting for it to finish: %s" % (self._get_name(), filepath_to_download))
             while filepath_to_download in filetracking_queue:
                 sleep(1)
-            logger.debug("%s: File no longer downloading, proceeding: %s" % (self._get_name(), filepath_to_download))
+            logger.info("%s: File no longer downloading, proceeding: %s" % (self._get_name(), filepath_to_download))
             sub_type.get_data()
         else:
-            logger.debug("%s: File not currently downloading, initiating download: %s" % (self._get_name(), filepath_to_download))
+            logger.info("%s: File not currently downloading, initiating download: %s" % (self._get_name(), filepath_to_download))
             filetracking_queue.append(filepath_to_download)
             sub_type.get_data()
-            logger.debug("%s: Download complete. Removing item from download queue: %s" % (self._get_name(), filepath_to_download))
+            logger.info("%s: Download complete. Removing item from download queue: %s" % (self._get_name(), filepath_to_download))
             filetracking_queue.remove(filepath_to_download)
