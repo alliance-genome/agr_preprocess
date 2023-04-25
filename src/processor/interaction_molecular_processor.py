@@ -450,20 +450,20 @@ class InteractionMolecularProcessor(Processor):
              open(self.output_dir + 'molecular_interactions_skipped_entries.txt', 'w', encoding='utf-8') as skipped_out, \
              open(self.output_dir + 'molecular_interactions_mapped_entries.txt', 'a+', encoding='utf-8') as mapped_out:
 
-            mapped_out = csv.writer(mapped_out, quoting=csv.QUOTE_NONE, delimiter='\t')
-            tsvout = csv.writer(tsvout, quoting=csv.QUOTE_NONE, delimiter='\t')
-            skipped_out = csv.writer(skipped_out, quoting=csv.QUOTE_NONE, delimiter='\t')
-            sarscov2_out = csv.writer(sarscov2_out, quoting=csv.QUOTE_NONE, delimiter='\t')
-            fb_out = csv.writer(fb_out, quoting=csv.QUOTE_NONE, delimiter='\t')
-            wb_out = csv.writer(wb_out, quoting=csv.QUOTE_NONE, delimiter='\t')
-            xb_out = csv.writer(xb_out, quoting=csv.QUOTE_NONE, delimiter='\t')
-            xbxl_out = csv.writer(xbxl_out, quoting=csv.QUOTE_NONE, delimiter='\t')
-            xbxt_out = csv.writer(xbxt_out, quoting=csv.QUOTE_NONE, delimiter='\t')
-            zfin_out = csv.writer(zfin_out, quoting=csv.QUOTE_NONE, delimiter='\t')
-            sgd_out = csv.writer(sgd_out, quoting=csv.QUOTE_NONE, delimiter='\t')
-            rgd_out = csv.writer(rgd_out, quoting=csv.QUOTE_NONE, delimiter='\t')
-            mgi_out = csv.writer(mgi_out, quoting=csv.QUOTE_NONE, delimiter='\t')
-            human_out = csv.writer(human_out, quoting=csv.QUOTE_NONE, delimiter='\t')
+            mapped_out = csv.writer(mapped_out, quotechar = '\u00e2', quoting=csv.QUOTE_NONE, delimiter='\t')
+            tsvout = csv.writer(tsvout, quotechar = '\u00e2', quoting=csv.QUOTE_NONE, delimiter='\t')
+            skipped_out = csv.writer(skipped_out, quotechar = '\u00e2', quoting=csv.QUOTE_NONE, delimiter='\t')
+            sarscov2_out = csv.writer(sarscov2_out, quotechar = '\u00e2', quoting=csv.QUOTE_NONE, delimiter='\t')
+            fb_out = csv.writer(fb_out, quotechar = '\u00e2', quoting=csv.QUOTE_NONE, delimiter='\t')
+            wb_out = csv.writer(wb_out, quotechar = '\u00e2', quoting=csv.QUOTE_NONE, delimiter='\t')
+            xb_out = csv.writer(xb_out, quotechar = '\u00e2', quoting=csv.QUOTE_NONE, delimiter='\t')
+            xbxl_out = csv.writer(xbxl_out, quotechar = '\u00e2', quoting=csv.QUOTE_NONE, delimiter='\t')
+            xbxt_out = csv.writer(xbxt_out, quotechar = '\u00e2', quoting=csv.QUOTE_NONE, delimiter='\t')
+            zfin_out = csv.writer(zfin_out, quotechar = '\u00e2', quoting=csv.QUOTE_NONE, delimiter='\t')
+            sgd_out = csv.writer(sgd_out, quotechar = '\u00e2', quoting=csv.QUOTE_NONE, delimiter='\t')
+            rgd_out = csv.writer(rgd_out, quotechar = '\u00e2', quoting=csv.QUOTE_NONE, delimiter='\t')
+            mgi_out = csv.writer(mgi_out, quotechar = '\u00e2', quoting=csv.QUOTE_NONE, delimiter='\t')
+            human_out = csv.writer(human_out, quotechar = '\u00e2', quoting=csv.QUOTE_NONE, delimiter='\t')
 
             # This list is now sorted phylogenetically for the header to be sorted
             out_write_list = [human_out, rgd_out, mgi_out, xb_out, xbxl_out, xbxt_out, zfin_out, fb_out, wb_out, sgd_out, sarscov2_out]
