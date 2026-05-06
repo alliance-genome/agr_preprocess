@@ -90,13 +90,17 @@ class Processor(object):
         response = requests.post(self.context_info.env['FMS_API_URL'] + '/api/data/submit/', files=file_to_upload, headers=headers)
         logger.info(response.text)
 
-        self.s3_upload(filepath_compressed)
+        self.s3_upload(dataType, dataSubType, filepath_uncompressed, filepath_compressed)
 
-    def s3_upload(self, filepath_compressed):
+    def s3_upload(self, dataType, dataSubType, filepath_uncompressed, filepath_compressed):
         bucket = self.context_info.env['S3_BUCKET']
         release = self.context_info.env['ALLIANCE_RELEASE']
         local_path = self.output_dir + filepath_compressed
-        s3_key = '{}/downloads/{}'.format(release, os.path.basename(filepath_compressed))
+
+        ext = os.path.splitext(filepath_uncompressed)[1].lstrip('.').lower()
+        format_label = ext.upper()
+        s3_filename = '{}_{}_{}.{}.gz'.format(dataType, format_label, dataSubType, ext)
+        s3_key = '{}/downloads/{}'.format(release, s3_filename)
 
         s3_client = self._build_s3_client()
 
