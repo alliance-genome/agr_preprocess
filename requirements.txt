@@ -7,3 +7,4 @@ strict-rfc3339
 requests
 jsonref
 cerberus
+boto3
