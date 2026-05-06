@@ -5,6 +5,10 @@ from common import ContextInfo
 import requests
 import gzip
 import shutil
+import boto3
+from botocore.credentials import InstanceMetadataProvider
+from botocore.utils import InstanceMetadataFetcher
+from botocore.session import Session as BotocoreSession
 
 logger = logging.getLogger(__name__)
 
@@ -85,3 +89,40 @@ class Processor(object):
 
         response = requests.post(self.context_info.env['FMS_API_URL'] + '/api/data/submit/', files=file_to_upload, headers=headers)
         logger.info(response.text)
+
+        self.s3_upload(filepath_compressed)
+
+    def s3_upload(self, filepath_compressed):
+        bucket = self.context_info.env['S3_BUCKET']
+        release = self.context_info.env['ALLIANCE_RELEASE']
+        local_path = self.output_dir + filepath_compressed
+        s3_key = '{}/downloads/{}'.format(release, os.path.basename(filepath_compressed))
+
+        s3_client = self._build_s3_client()
+
+        logger.info('Uploading %s to s3://%s/%s', local_path, bucket, s3_key)
+        s3_client.upload_file(local_path, bucket, s3_key)
+        logger.info('Uploaded s3://%s/%s', bucket, s3_key)
+
+    def _build_s3_client(self):
+        profile = self.context_info.env.get('AWS_PROFILE')
+        access_key = self.context_info.env.get('AWS_ACCESS_KEY')
+        secret_key = self.context_info.env.get('AWS_SECRET_KEY')
+
+        if profile:
+            logger.info('Using AWS profile: %s', profile)
+            return boto3.Session(profile_name=profile).client('s3')
+
+        if access_key and secret_key:
+            logger.info('Using static AWS access keys')
+            return boto3.client('s3', aws_access_key_id=access_key, aws_secret_access_key=secret_key)
+
+        instance_creds = InstanceMetadataProvider(iam_role_fetcher=InstanceMetadataFetcher(timeout=2, num_attempts=2)).load()
+        if instance_creds is not None:
+            logger.info('Using EC2 instance profile credentials')
+            botocore_session = BotocoreSession()
+            botocore_session._credentials = instance_creds
+            return boto3.Session(botocore_session=botocore_session).client('s3')
+
+        logger.info('Using default AWS credential chain')
+        return boto3.client('s3')
